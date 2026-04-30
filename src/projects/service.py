@@ -10,13 +10,20 @@ class ProjectService():
         self.repo = repo
     
     async def create_project(self, project_schema: ProjectCreateRequestSchema, user_id: int) -> Project:
-        pass
+        
+        project_complete_schema = ProjectCreateSchema(**project_schema.model_dump(), owner_id=user_id)
+        return await self.repo.create_project(project_complete_schema)
     
-    async def _is_user_has_access_to_project(self, project_id: int, user_id: int) -> bool:
-        pass
+    async def _get_project_or_403(self, project_id: int, user_id: int) -> bool:
+        project = await self.repo.get_project_by_id(project_id)
+        if not project:
+            raise 
+        if not project.owner_id == user_id:
+            raise
+        return project
     
-    async def get_project_by_id(self, id: int, user_id: int) -> Project:
-        pass
+    async def get_project_by_id(self, project_id: int, user_id: int) -> Project:
+        return await self._get_project_or_403(project_id, user_id)
         
     async def get_all_project_by_user(self, user_id: int) -> list[Project]:
         pass
