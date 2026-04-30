@@ -1,6 +1,7 @@
 from src.projects.repository import ProjectRepository
 from src.projects.schemas import ProjectCreateRequestSchema, ProjectCreateSchema, ProjectUpdateSchema
 from src.projects.models import Project
+from src.core.database import get_db
 
 
 class ProjectService():
@@ -25,3 +26,4 @@ class ProjectService():
     
     async def delete_project(self, project_id: int, user_id: int) -> None:
         pass
+        

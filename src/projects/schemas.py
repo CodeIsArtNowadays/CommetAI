@@ -28,7 +28,3 @@ class ProjectRetrieveSchema(ProjectBaseSchema):
     id: int
     owner: UserInfoSchema
     created_at: datetime
-
-
-class ProjectRequestByID(BaseModel):
-    id: int
