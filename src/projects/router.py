@@ -15,7 +15,7 @@ async def get_all_projects(
     user: User = Depends(get_mock_user),
     service: ProjectService = Depends(get_project_service)
 ):
-    pass
+    return await service.get_all_project_by_user(user.id)
 
 
 @projects_router.get('/{project_id}', response_model=ProjectRetrieveSchema)
@@ -24,7 +24,7 @@ async def get_project_by_id(
     user: User = Depends(get_mock_user),
     service: ProjectService = Depends(get_project_service)
 ):
-    pass
+    return await service.get_project_by_id(project_id, user.id)
 
 @projects_router.post(
     '/',
@@ -36,7 +36,7 @@ async def create_project(
     user: User = Depends(get_mock_user),
     service: ProjectService = Depends(get_project_service)
 ):
-    pass
+    return await service.create_project(project_data, user.id)
 
 @projects_router.patch('/{project_id}', response_model=ProjectRetrieveSchema)
 async def update_project(
@@ -45,7 +45,7 @@ async def update_project(
     user: User = Depends(get_mock_user),
     service: ProjectService = Depends(get_project_service)
 ):
-    pass
+    return await service.update_project(project_id, updated_project, user.id)
 
 @projects_router.delete('/{project_id}', status_code=204)
 async def delete_project(
@@ -53,4 +53,4 @@ async def delete_project(
     user: User = Depends(get_mock_user),
     service: ProjectService = Depends(get_project_service)
 ):
-    pass
+    await service.delete_project(project_id, user.id)
