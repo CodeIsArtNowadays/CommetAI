@@ -3,6 +3,7 @@ from typing import Sequence
 from sqlalchemy import select, delete
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from src.core.dependencies import PaginationParams
 from src.projects.models import Project
 from src.projects.schemas import ProjectCreateSchema, ProjectUpdateSchema
 
@@ -24,8 +25,8 @@ class ProjectRepository:
         res = await self.session.execute(stmt)
         return res.scalar_one_or_none()
         
-    async def get_all_project_by_user(self, user_id: int) -> Sequence[Project]:
-        stmt = select(Project).where(Project.owner_id==user_id)
+    async def get_all_project_by_user(self, user_id: int, pagination: PaginationParams) -> Sequence[Project]:
+        stmt = select(Project).where(Project.owner_id==user_id).offset(pagination.offset()).limit(pagination.size)
         res = await self.session.execute(stmt)
         return res.scalars().all()
         

@@ -4,7 +4,7 @@ from fastapi.routing import APIRouter
 from src.projects.schemas import ProjectRetrieveSchema, ProjectCreateRequestSchema, ProjectUpdateSchema
 from src.projects.service import ProjectService
 from src.auth.models import User
-from src.core.dependencies import get_mock_user, get_project_service
+from src.core.dependencies import PaginationParams, get_mock_user, get_project_service
 
 
 projects_router = APIRouter()
@@ -13,9 +13,10 @@ projects_router = APIRouter()
 @projects_router.get('/', response_model=list[ProjectRetrieveSchema])
 async def get_all_projects(
     user: User = Depends(get_mock_user),
-    service: ProjectService = Depends(get_project_service)
+    service: ProjectService = Depends(get_project_service),
+    pagination: PaginationParams = Depends()
 ):
-    return await service.get_all_project_by_user(user.id)
+    return await service.get_all_project_by_user(user.id, pagination)
 
 
 @projects_router.get('/{project_id}', response_model=ProjectRetrieveSchema)
