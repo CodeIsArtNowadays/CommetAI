@@ -15,6 +15,7 @@ class ProjectRepository:
     async def create_project(self, project_data: ProjectCreateSchema) -> Project:
         project = Project(**project_data.model_dump())
         self.session.add(project)
+        await self.session.flush()
         await self.session.refresh(project)
         return project
         

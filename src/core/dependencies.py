@@ -1,9 +1,22 @@
-from fastapi import Depends
+from fastapi import Depends, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 from src.auth.models import User
 from src.core.database import get_db
 from src.projects.repository import ProjectRepository
 from src.projects.service import ProjectService
+
+
+class PaginationParams:
+    def __init__(
+        self, 
+        page: int = Query(default=1, ge=1),
+        size: int = Query(default=10, ge=5, le=100)
+    ):
+        self.page = page
+        self.size = size
+        
+    def offset(self):
+        return (self.page - 1) * self.size
 
 
 def get_mock_user(x: int = 1) -> User:
