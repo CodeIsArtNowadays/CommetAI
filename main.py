@@ -1,13 +1,13 @@
 from fastapi import FastAPI
 from fastapi.responses import JSONResponse
 
+from src.board import projects_router
 from src.core.exceptions import ProjectServiceException
-from src.projects.router import projects_router
 
 app = FastAPI()
 
 
-app.include_router(projects_router, prefix='/projects')
+app.include_router(projects_router, prefix='/projects', tags=['projects'])
 
 
 @app.exception_handler(ProjectServiceException)

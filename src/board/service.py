@@ -1,8 +1,8 @@
 from src.core.dependencies import PaginationParams
 from src.core.exceptions import ProjectNotFoundException, ProjectAccessIsNotAllowedException
-from src.projects.repository import ProjectRepository
-from src.projects.schemas import ProjectCreateRequestSchema, ProjectCreateSchema, ProjectUpdateSchema
-from src.projects.models import Project
+from src.board.repository import ProjectRepository
+from src.board.schemas import ProjectCreateRequestSchema, ProjectCreateSchema, ProjectUpdateSchema
+from src.board.models import Project
 
 class ProjectService():
         

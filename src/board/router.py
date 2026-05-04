@@ -1,8 +1,8 @@
 from fastapi import Depends
 from fastapi.routing import APIRouter
 
-from src.projects.schemas import ProjectRetrieveSchema, ProjectCreateRequestSchema, ProjectUpdateSchema
-from src.projects.service import ProjectService
+from src.board.schemas import ProjectRetrieveSchema, ProjectCreateRequestSchema, ProjectUpdateSchema
+from src.board.service import ProjectService
 from src.auth.models import User
 from src.core.dependencies import PaginationParams, get_mock_user, get_project_service
 

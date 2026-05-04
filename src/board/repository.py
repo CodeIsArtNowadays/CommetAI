@@ -4,8 +4,8 @@ from sqlalchemy import select, delete
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.core.dependencies import PaginationParams
-from src.projects.models import Project
-from src.projects.schemas import ProjectCreateSchema, ProjectUpdateSchema
+from src.board.models import Project
+from src.board.schemas import ProjectCreateSchema, ProjectUpdateSchema
 
 
 class ProjectRepository:

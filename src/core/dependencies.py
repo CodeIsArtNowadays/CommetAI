@@ -1,9 +1,10 @@
 from fastapi import Depends, Query
 from sqlalchemy.ext.asyncio import AsyncSession
+
+from src.core import get_db
 from src.auth.models import User
-from src.core.database import get_db
-from src.projects.repository import ProjectRepository
-from src.projects.service import ProjectService
+from src.board.repository import ProjectRepository
+from src.board.service import ProjectService
 
 
 class PaginationParams:
