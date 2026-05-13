@@ -2,15 +2,17 @@ from fastapi import FastAPI
 from fastapi.responses import JSONResponse
 
 from src.board import projects_router
+from src.auth import auth_router
+from src.auth.exceptions import AuthBaseException
 from src.core.exceptions import ProjectServiceException
 
 app = FastAPI()
 
 
 app.include_router(projects_router, prefix='/projects', tags=['projects'])
+app.include_router(auth_router, prefix='/auth', tags=['auth'])
 
-
-@app.exception_handler(ProjectServiceException)
+@app.exception_handler(ProjectServiceException)  # TODO: project global base exception
 async def project_service_exception(request, exc: ProjectServiceException):
     return JSONResponse(status_code=exc.error_code, content={"detail": exc.message})
 

@@ -1,4 +1,4 @@
-from datetime import date, datetime
+from datetime import datetime
 
 from sqlalchemy import DateTime, ForeignKey, String, Text, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
@@ -32,10 +32,12 @@ class Task(Base):
     id: Mapped[int] = mapped_column(primary_key=True)
     title: Mapped[str] = mapped_column(String(63))
     description: Mapped[str | None] = mapped_column(Text, nullable=True)
-    project_id: Mapped[int] = mapped_column(ForeignKey('projects.id', ondelete='CASCADE'))
     due_time: Mapped[datetime] = mapped_column()
     is_done: Mapped[bool] = mapped_column(default=False)
+    assignee_id: Mapped[int] = mapped_column(ForeignKey('users.id'))
+    project_id: Mapped[int] = mapped_column(ForeignKey('projects.id', ondelete='CASCADE'))
     
+    assignee: Mapped[User] = relationship('User', lazy='joined')
     project: Mapped[Project] = relationship(Project, back_populates='tasks')
 
     created_at: Mapped[datetime] = mapped_column(

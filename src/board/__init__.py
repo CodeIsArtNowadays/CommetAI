@@ -1,1 +1,1 @@
-from .router import projects_router 
+from .router import projects_router

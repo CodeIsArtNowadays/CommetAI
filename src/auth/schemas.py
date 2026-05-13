@@ -1,6 +1,17 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict, Field
 
 
-class UserInfoSchema(BaseModel):
-    username: str
+class BaseUserSchema(BaseModel):
+    username: str = Field(max_length=31)
     
+    model_config = ConfigDict(
+        from_attributes=True
+    )
+
+
+class UserInfoSchema(BaseUserSchema):
+    pass
+
+
+class UserCredentialSchema(BaseUserSchema):
+    password: str

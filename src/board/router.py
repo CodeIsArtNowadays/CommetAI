@@ -4,7 +4,7 @@ from fastapi.routing import APIRouter
 from src.board.schemas import ProjectRetrieveSchema, ProjectCreateRequestSchema, ProjectUpdateSchema
 from src.board.service import ProjectService
 from src.auth.models import User
-from src.core.dependencies import PaginationParams, get_mock_user, get_project_service
+from src.core.dependencies import get_user, get_project_service
 
 
 projects_router = APIRouter()
@@ -12,17 +12,16 @@ projects_router = APIRouter()
 
 @projects_router.get('/', response_model=list[ProjectRetrieveSchema])
 async def get_all_projects(
-    user: User = Depends(get_mock_user),
+    user: User = Depends(get_user),
     service: ProjectService = Depends(get_project_service),
-    pagination: PaginationParams = Depends()
 ):
-    return await service.get_all_project_by_user(user.id, pagination)
+    return await service.get_all_project_by_user(user.id)
 
 
 @projects_router.get('/{project_id}', response_model=ProjectRetrieveSchema)
 async def get_project_by_id(
     project_id: int,
-    user: User = Depends(get_mock_user),
+    user: User = Depends(get_user),
     service: ProjectService = Depends(get_project_service)
 ):
     return await service.get_project_by_id(project_id, user.id)
@@ -34,7 +33,7 @@ async def get_project_by_id(
 )
 async def create_project(
     project_data: ProjectCreateRequestSchema,
-    user: User = Depends(get_mock_user),
+    user: User = Depends(get_user),
     service: ProjectService = Depends(get_project_service)
 ):
     return await service.create_project(project_data, user.id)
@@ -43,7 +42,7 @@ async def create_project(
 async def update_project(
     project_id: int, 
     updated_project: ProjectUpdateSchema,
-    user: User = Depends(get_mock_user),
+    user: User = Depends(get_user),
     service: ProjectService = Depends(get_project_service)
 ):
     return await service.update_project(project_id, updated_project, user.id)
@@ -51,7 +50,7 @@ async def update_project(
 @projects_router.delete('/{project_id}', status_code=204)
 async def delete_project(
     project_id: int,
-    user: User = Depends(get_mock_user),
+    user: User = Depends(get_user),
     service: ProjectService = Depends(get_project_service)
 ):
     await service.delete_project(project_id, user.id)

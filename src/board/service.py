@@ -1,10 +1,9 @@
-from src.core.dependencies import PaginationParams
 from src.core.exceptions import ProjectNotFoundException, ProjectAccessIsNotAllowedException
 from src.board.repository import ProjectRepository
 from src.board.schemas import ProjectCreateRequestSchema, ProjectCreateSchema, ProjectUpdateSchema
 from src.board.models import Project
 
-class ProjectService():
+class ProjectService:
         
     def __init__(self, repo: ProjectRepository):
         self.repo = repo
@@ -24,8 +23,8 @@ class ProjectService():
     async def get_project_by_id(self, project_id: int, user_id: int) -> Project:
         return await self._get_project_or_403(project_id, user_id)
         
-    async def get_all_project_by_user(self, user_id: int, pagination: PaginationParams) -> list[Project]:
-        res = await self.repo.get_all_project_by_user(user_id, pagination)
+    async def get_all_project_by_user(self, user_id: int) -> list[Project]:
+        res = await self.repo.get_all_project_by_user(user_id)
         return list(res)
         
     async def update_project(self, project_id: int, update_project: ProjectUpdateSchema, user_id: int) -> Project:
@@ -35,4 +34,5 @@ class ProjectService():
     async def delete_project(self, project_id: int, user_id: int) -> None:
         await self._get_project_or_403(project_id, user_id)
         await self.repo.delete_project(project_id)
+        
         
