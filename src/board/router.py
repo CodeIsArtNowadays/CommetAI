@@ -4,7 +4,8 @@ from fastapi.routing import APIRouter
 from src.board.schemas import ProjectRetrieveSchema, ProjectCreateRequestSchema, ProjectUpdateSchema
 from src.board.service import ProjectService
 from src.auth.models import User
-from src.core.dependencies import get_user, get_project_service
+from src.core.dependencies import get_user
+from src.board.dependencies import get_project_service
 
 
 projects_router = APIRouter()

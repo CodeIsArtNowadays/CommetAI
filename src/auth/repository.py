@@ -1,8 +1,8 @@
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.auth.schemas import UserCredentialSchema
-from src.auth.models import User as UserModel
+from src.auth.schemas import UserCredentialSchema, RefreshTokenCreateSchema
+from src.auth.models import RefreshTokenModel, User as UserModel
 
 
 class UserRepository:
@@ -29,3 +29,10 @@ class UserRepository:
     
     async def get_user_by_id(self, user_id) -> UserModel | None:
         return await self.session.get(UserModel, user_id)
+        
+    async def create_refresh_token(self, ref_token_data: RefreshTokenCreateSchema) -> RefreshTokenModel:
+        ref_token = RefreshTokenModel(**ref_token_data.model_dump())
+        self.session.add(ref_token)
+        await self.session.flush()
+        await self.session.refresh(ref_token)
+        return ref_token

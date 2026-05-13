@@ -1,11 +1,9 @@
-from fastapi import Depends
-from sqlalchemy.ext.asyncio import AsyncSession
+from fastapi import Depends, HTTPException, status
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 
-from src.core import get_db
+from src.auth.dependencies import get_user_service
+from src.auth.service import UserService
 from src.auth.models import User
-from src.board.repository import ProjectRepository
-from src.board.service import ProjectService
-from src.core.mock import get_mock_user
 
 
 # class PaginationParams:
@@ -19,11 +17,27 @@ from src.core.mock import get_mock_user
         
 #     def offset(self):
 #         return (self.page - 1) * self.size
+    
 
-async def get_project_service(session: AsyncSession = Depends(get_db)) -> ProjectService:
-    repo = ProjectRepository(session)
-    return ProjectService(repo)
+bearer = HTTPBearer()
+    
+
+async def get_user(
+    creds: HTTPAuthorizationCredentials | None = Depends(bearer),
+    user_service: UserService = Depends(get_user_service)
+) -> User:
+    if creds is None:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail='No auth')
+        
+    token = creds.credentials
+    decoded = await user_service.decode_jwt_token(token)
+    
+    if not decoded:
+        raise 
+        
+    user_id = int(decoded['sub'])
+    
+    return await user_service.repo.get_user_by_id(user_id)
     
     
-async def get_user() -> User:
-    return get_mock_user()
+    
