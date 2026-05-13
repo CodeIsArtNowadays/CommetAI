@@ -34,8 +34,12 @@ class Task(Base):
     description: Mapped[str | None] = mapped_column(Text, nullable=True)
     due_time: Mapped[datetime] = mapped_column()
     is_done: Mapped[bool] = mapped_column(default=False)
+<<<<<<< HEAD
     assignee_id: Mapped[int] = mapped_column(ForeignKey('users.id'))
     project_id: Mapped[int] = mapped_column(ForeignKey('projects.id', ondelete='CASCADE'))
+=======
+    creator_id: Mapped[int] = mapped_column(ForeignKey('users.id'))
+>>>>>>> a35de75194d56f81308e31fbdaf83043a7475506
     
     assignee: Mapped[User] = relationship('User', lazy='joined')
     project: Mapped[Project] = relationship(Project, back_populates='tasks')
