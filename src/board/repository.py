@@ -39,7 +39,6 @@ class ProjectRepository:
     async def delete_project(self, project_id: int) -> None:
         stmt = delete(Project).where(Project.id==project_id)
         await self.session.execute(stmt)
-<<<<<<< HEAD
         
         
 class TaskRepository:
@@ -75,14 +74,3 @@ class TaskRepository:
         stmt = delete(Task).where(Task.id==task_id)
         await self.session.execute(stmt)
         
-    
-=======
-
-
-class TaskRepository:
-
-    def __init__(self):
-        pass
-
-    async def create_task(self, task: None, project_id: int, user_)
->>>>>>> a35de75194d56f81308e31fbdaf83043a7475506
