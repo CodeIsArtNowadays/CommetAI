@@ -3,7 +3,6 @@ from fastapi.responses import JSONResponse
 
 from src.board import projects_router
 from src.auth import auth_router
-from src.auth.exceptions import AuthBaseException
 from src.core.exceptions import ProjectServiceException
 
 app = FastAPI()

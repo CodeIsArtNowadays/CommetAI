@@ -12,6 +12,9 @@ class Settings(BaseSettings):
     
     JWT_SECRET_KEY: str = ''
     
+    GITHUB_CLIENT_ID: str = ''
+    GITHUB_CLIENT_SECRET: str = ''
+    
     model_config = SettingsConfigDict(env_file='.env')
     
     @property
