@@ -9,6 +9,7 @@ class ProjectBaseSchema(BaseModel):
     
     title: str
     description: str | None = Field(default=None)
+    repo: str
     
     
 class ProjectUpdateSchema(BaseModel):

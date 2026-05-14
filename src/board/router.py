@@ -55,3 +55,12 @@ async def delete_project(
     service: ProjectService = Depends(get_project_service)
 ):
     await service.delete_project(project_id, user.id)
+
+@projects_router.post('/wh')
+async def test_wh(
+    user: User = Depends(get_user),
+    service: ProjectService = Depends(get_project_service)
+):
+    await service.create_webhook('test1', user.id)
+    
+    

@@ -17,11 +17,13 @@ async def profile(user: User = Depends(get_user)):
 @auth_router.get('/github')
 async def github_redirect():
     return RedirectResponse(
-        f"https://github.com/login/oauth/authorize?client_id={settings.GITHUB_CLIENT_ID}"
+        f"https://github.com/login/oauth/authorize?client_id={settings.GITHUB_CLIENT_ID}&scope=read:user,user:email,repo"
     )
     
 @auth_router.get('/callback/github')
 async def github_callback(code: str, service: UserService = Depends(get_user_service)):
     return await service.github_auth(code)
+    
+    
     
     
