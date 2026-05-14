@@ -1,14 +1,16 @@
 import secrets
 from datetime import datetime, timedelta
-from uuid import uuid4
 
+import httpx
 import jwt
 from pwdlib import PasswordHash
 
 from config import settings
-from src.auth.exceptions import NoUsernameMatchError
+from src.auth.models import User
 from src.auth.repository import UserRepository
-from src.auth.schemas import RefreshTokenCreateSchema, UserCreateResponse, UserCredentialSchema
+from src.auth.schemas import (
+    UserCreateWithGithubSchema,
+)
 
 
 class UserService:
@@ -16,39 +18,15 @@ class UserService:
         self.repo = repo
         self.password_hash = PasswordHash.recommended()
 
-    async def create_user(self, user_data: UserCredentialSchema) -> UserCreateResponse:
-        hashed_pswd = await self.hash_password(user_data.password)
-        user_data.password = hashed_pswd
+    async def create_user(self, user_data: UserCreateWithGithubSchema) -> User:
         user = await self.repo.create_user(user_data)
-        jwt_tokens = await self.login(user_data)
-        return UserCreateResponse(
-            **user,
-            access_token=jwt_tokens["access_token"],
-            refresh_token=jwt_tokens["refresh_token"],
-        )
+        return user
 
-    async def login(self, user_data: UserCredentialSchema) -> dict:
-        user = await self.repo.get_user_by_username(user_data.username)
-        if not user:
-            raise NoUsernameMatchError("No user with that username")
-        if not self.password_hash.verify(user_data.password, user.password):
-            raise NoUsernameMatchError("No user with that username")  # TODO: BadCredExc
-
-        access_token = await self.create_jwt_token({"sub": str(user.id)})
-        refresh_token = await self.generate_refresh_token()
-        
-        ref_token_data = RefreshTokenCreateSchema(
-            user_id=user.id,
-            token=refresh_token,
-            jti=str(uuid4())
-        )
-        
-        await self.repo.create_refresh_token(ref_token_data)
-        
-        return {'access_token': access_token, 'refresh_token': refresh_token}
-
-    async def create_jwt_token(self, payload: dict) -> str:
-        payload["expire"] = str(datetime.now() + timedelta(days=7))
+    async def create_jwt_token(self, user_id: int) -> str:
+        payload = {
+            'user_id': user_id,
+            'expire': str(datetime.now() + timedelta(days=7))
+        }
         return jwt.encode(payload, settings.JWT_SECRET_KEY, algorithm="HS256")
 
     async def generate_refresh_token(self):
@@ -61,6 +39,46 @@ class UserService:
             return None
         except jwt.InvalidTokenError:
             return None
+    
+    async def github_auth(self, code: str):
+        github_user, access_token = await self.github_get_user_data_by_code(code)
+        user = await self.repo.get_user_by_github_id(github_user['id'])
+        
+        if not user:
+            user = await self.create_user(UserCreateWithGithubSchema(
+                username=github_user['login'],
+                github_id=github_user['id'],
+                github_token=access_token
+            ))
+        
+        return await self.create_jwt_token(user.id)
+    
+    async def github_get_user_data_by_code(self, code: str):
+        async with httpx.AsyncClient() as client:
+            response = await client.post(
+                "https://github.com/login/oauth/access_token",
+                params={
+                    "client_id": settings.GITHUB_CLIENT_ID,
+                    "client_secret": settings.GITHUB_CLIENT_SECRET,
+                    "code": code,
+                },
+                headers={"Accept": "application/json"},
+            )
 
-    async def hash_password(self, s) -> str:
-        return self.password_hash.hash(s)
+            if not response.status_code == 200:
+                raise Exception # TODO: exc
+            
+            response_data = response.json()
+            access_token = response_data.get("access_token")
+            
+            if not access_token:
+                raise Exception  # TODO: exc
+
+            user = await client.get(
+                "https://api.github.com/user",
+                headers={
+                    "Authorization": f"Bearer {access_token}",
+                    "Accept": "application/vnd.github+json",
+                },
+            )
+            return user.json(), access_token

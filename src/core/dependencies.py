@@ -35,7 +35,7 @@ async def get_user(
     if not decoded:
         raise 
         
-    user_id = int(decoded['sub'])
+    user_id = int(decoded['user_id'])
     
     return await user_service.repo.get_user_by_id(user_id)
     

@@ -8,23 +8,18 @@ class BaseUserSchema(BaseModel):
         from_attributes=True
     )
 
-
 class UserInfoSchema(BaseUserSchema):
     pass
-
-
-class UserCredentialSchema(BaseUserSchema):
-    password: str
-    
     
 class UserCreateResponse(BaseUserSchema):
     access_token: str
     refresh_token: str
-    
     
 class RefreshTokenCreateSchema(BaseModel):
     token: str
     jti: str
     user_id: int
         
-       
+class UserCreateWithGithubSchema(BaseUserSchema):
+    github_id: int
+    github_token: str
