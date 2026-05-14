@@ -1,4 +1,4 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 
 from src.board import projects_router
@@ -16,9 +16,12 @@ async def index():
     return {'Me': 'KING'}
     
 @app.post('/webhooks/github')
-async def wh(data):
+async def wh(request: Request):
     print('check2')
-    print(data)
+    print(200)
+    print(request.headers)
+    print(request.json())
+    
 
 @app.exception_handler(ProjectServiceException)  # TODO: project global base exception
 async def project_service_exception(request, exc: ProjectServiceException):

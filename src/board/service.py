@@ -50,7 +50,7 @@ class ProjectService:
             )
 
             print(response.status_code)
-            print(response)
+            
 
     async def create_project(
         self, project_schema: ProjectCreateRequestSchema, user_id: int
