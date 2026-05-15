@@ -20,7 +20,7 @@ async def wh(request: Request):
     print('check2')
     print(200)
     print(request.headers)
-    print(request.json())
+    print(await request.json())
     
 
 @app.exception_handler(ProjectServiceException)  # TODO: project global base exception

@@ -10,6 +10,7 @@ from alembic import context
 from config import settings
 from src.auth.models import User
 from src.board.models import Project, Task
+from src.webhook.models import WebhookRecord
 
 from src.core.database import Base
 # this is the Alembic Config object, which provides
