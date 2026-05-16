@@ -48,6 +48,11 @@ class ProjectRepository:
         stmt = delete(Project).where(Project.id==project_id)
         await self.session.execute(stmt)
         
+    async def get_project_by_repo_full_name(self, repo_full_name: str) -> Project:
+        stmt = select(Project).where(Project.repo_full_name == repo_full_name)
+        res = await self.session.execute(stmt)
+        return res.scalar_one()
+        
         
 class TaskRepository:
     

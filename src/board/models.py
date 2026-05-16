@@ -15,7 +15,7 @@ class Project(Base):
     description: Mapped[str | None] = mapped_column(Text, nullable=True)
     owner_id: Mapped[int] = mapped_column(ForeignKey('users.id', ondelete='CASCADE'))
     
-    repo_full_name: Mapped[str] = mapped_column(nullable=True, index=True)
+    repo_full_name: Mapped[str] = mapped_column(nullable=True, index=True, unique=True)
     webhook_id: Mapped[int] = mapped_column(nullable=True, unique=True, index=True)
     webhook_secret: Mapped[str] = mapped_column(nullable=True, unique=True)
     

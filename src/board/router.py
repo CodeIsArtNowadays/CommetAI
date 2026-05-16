@@ -1,6 +1,12 @@
+import hashlib
+import hmac
+import json
+
+import httpx
 from fastapi import Depends, Request
 from fastapi.routing import APIRouter
 
+from config import settings
 from src.board.schemas import ProjectRetrieveSchema, ProjectCreateRequestSchema, ProjectUpdateSchema
 from src.board.service import ProjectService
 from src.auth.models import User
@@ -60,14 +66,72 @@ async def create_project(
 
 @webhook_router.post('/webhook/event')
 async def webhook_callback(
-    request: Request
+    request: Request,
+    project_service: ProjectService = Depends(get_project_service)
 ):
-    signature = request.headers.get('x-hub-signature')  # TODO: verif with github_secret 
+    body = await request.body()
+    response_data = json.loads(body)
+    
+    event = request.headers.get('x-github-event')
     delivery = request.headers.get('x-github-delivery')  # TODO: save to redis, avoid double handling
     
-    response_data = await request.json()
-    
-    if request.headers.get('x-github-event') == 'ping':
-        return {'wh': 'on'}
+    if event == 'ping':
+        print('ping')
+        return 200
+        
+    if event == 'push':
+        
+        repo_full_name = response_data['repository']['full_name']
+
+        project = await project_service.repo.get_project_by_repo_full_name(repo_full_name)
+        
+        signature = request.headers.get('x-hub-signature-256')
+        
+        if not signature:
+            raise Exception  # TODO: exc
+        
+        secret = project.webhook_secret
+        
+        expected = 'sha256=' + hmac.new(
+            secret.encode(),
+            body,
+            hashlib.sha256
+        ).hexdigest()
+        
+        if not hmac.compare_digest(expected, signature):
+            return 400 # TODO: exc
+            
+        
+        # Commits handling
+        # 
+        
+        for commit in response_data['commits']:
+            commit_id = commit['id']
+            
+            async with httpx.AsyncClient() as client:
+                url = f'https://api.github.com/repos/{repo_full_name}/commits/{commit_id}'
+                headers = {
+                    'Authorization': f'Bearer {project.owner.github_token}',
+                    'Accept': 'application/vnd.github+json',
+                    'X-GitHub-Api-Version': '2022-11-28'
+                }
+                response = await client.get(
+                    url,
+                    headers=headers
+                )
+
+                response_data = response.json()
+                
+                commit_data = {
+                    'sha': response_data['sha'],
+                    'commit_message': response_data.get('commit').get('message'),
+                    'commit_author_name': response_data.get('commit').get('author').get('name'),
+                    'commit_created': response_data.get('commit').get('author').get('date'),
+                    'additions': response_data.get('stats').get('additions'),
+                    'deletions': response_data.get('stats').get('deletions'),
+                    'files': response_data.get('files')
+                }
+                
+                print(commit_data)
     
     return 

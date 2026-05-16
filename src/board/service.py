@@ -53,8 +53,6 @@ class ProjectService:
                 'secret': secret
             }
             
-            
-
     async def create_project(
         self, project_schema: ProjectCreateRequestSchema, user: User
     ) -> Project:
@@ -101,3 +99,52 @@ class ProjectService:
     async def delete_project(self, project_id: int, user_id: int) -> None:
         await self._get_project_or_403(project_id, user_id)
         await self.repo.delete_project(project_id)
+
+
+class WebhookService:
+    
+    def __init__(self):
+        pass
+        
+    async def create_webhook(self, repo_full_name: str, owner_github_token: str):
+        
+        url = f'https://api.github.com/repos/{repo_full_name}/hooks'
+        headers = {
+            'Authorization': f'Bearer {owner_github_token}',
+            "Accept": "application/vnd.github+json",
+            "X-GitHub-Api-Version": "2022-11-28",
+        }
+        secret = str(uuid.uuid4())
+        
+        async with httpx.AsyncClient() as client:
+            
+            response = await client.post(
+                url,
+                headers=headers,
+                json={
+                    'name': 'web',
+                    'active': True,
+                    'events': ['push'],
+                    'config': {
+                        'secret': secret,
+                        'url': 'https://peddling-unsure-unpaid.ngrok-free.dev/webhook/event',
+                        'content': 'json'
+                    }
+                }
+            )
+            
+            if not response.status_code == 201:
+                raise Exception  # TODO: exc
+                
+            response_data = response.json()
+            return {
+                'wh_id': response_data['id'],
+                'secret': secret
+            }
+    
+    async def get_commits_from_webhook_callback(self):
+        pass
+    
+    async def verify_webhook_request(self):
+        pass
+        
