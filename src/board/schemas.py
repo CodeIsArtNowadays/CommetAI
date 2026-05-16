@@ -9,7 +9,6 @@ class ProjectBaseSchema(BaseModel):
     
     title: str
     description: str | None = Field(default=None)
-    repo: str
     
     
 class ProjectUpdateSchema(BaseModel):
@@ -24,7 +23,16 @@ class ProjectCreateRequestSchema(ProjectBaseSchema):
 class ProjectCreateSchema(ProjectCreateRequestSchema):
     owner_id: int
     
-    
+
+class WebhookCreateSchema(BaseModel):
+    repo_full_name: str
+    owner_github_token: str
+
+class WebhookDataCreateSchema(BaseModel):
+    repo_full_name: str
+    webhook_id: int
+    webhook_secret: str
+
 class ProjectRetrieveSchema(ProjectBaseSchema):
     id: int
     owner: UserInfoSchema

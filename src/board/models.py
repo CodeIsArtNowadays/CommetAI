@@ -15,7 +15,9 @@ class Project(Base):
     description: Mapped[str | None] = mapped_column(Text, nullable=True)
     owner_id: Mapped[int] = mapped_column(ForeignKey('users.id', ondelete='CASCADE'))
     
-    repo: Mapped[str] = mapped_column()
+    repo_full_name: Mapped[str] = mapped_column(nullable=True, index=True)
+    webhook_id: Mapped[int] = mapped_column(nullable=True, unique=True, index=True)
+    webhook_secret: Mapped[str] = mapped_column(nullable=True, unique=True)
     
     owner: Mapped[User] = relationship('User', lazy='joined')
     tasks: Mapped['Task'] = relationship('Task', back_populates='project')

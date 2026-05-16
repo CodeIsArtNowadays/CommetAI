@@ -1,12 +1,14 @@
+import uuid
 import httpx
 
-from src.auth.repository import UserRepository
+from src.auth.models import User
 from src.board.models import Project
 from src.board.repository import ProjectRepository
 from src.board.schemas import (
     ProjectCreateRequestSchema,
     ProjectCreateSchema,
     ProjectUpdateSchema,
+    WebhookDataCreateSchema,
 )
 from src.core.exceptions import (
     ProjectAccessIsNotAllowedException,
@@ -19,21 +21,16 @@ class ProjectService:
         self.repo = repo
         self.base_url = "https://api.github.com"
 
-    async def create_webhook(self, project_name, user_id):
-
-        owner = await UserRepository(self.repo.session).get_user_by_id(user_id)
-        if not owner:
-            raise Exception
+    async def create_webhook(self, repo_full_name, owner_github_token: str):
 
         async with httpx.AsyncClient() as client:
             headers = {
                 "Accept": "application/vnd.github+json",
                 "X-GitHub-Api-Version": "2022-11-28",
-                "Authorization": f"Bearer {owner.github_token}",
+                "Authorization": f"Bearer {owner_github_token}",
             }
-            uri = self.base_url + f"/repos/{owner.username}/{project_name}/hooks"
-            print("check1")
-            print(uri)
+            uri = self.base_url + f"/repos/{repo_full_name}/hooks"
+            secret = str(uuid.uuid4())
             response = await client.post(
                 uri,
                 headers=headers,
@@ -42,24 +39,44 @@ class ProjectService:
                     "active": True,
                     "events": ["push"],
                     "config": {
-                        "url": "https://peddling-unsure-unpaid.ngrok-free.dev/webhooks/github",
+                        "url": "https://peddling-unsure-unpaid.ngrok-free.dev/webhook/event",
                         "content_type": "json",
-                        "secret": "ahepfokgj1njbbh48j",
+                        "secret": secret,
                     },
                 },
             )
-
-            print(response.status_code)
+            if not response.status_code == 201:
+                raise Exception # TODO: exc
+            response_data = response.json()
+            return {
+                'wh_id': response_data['id'],
+                'secret': secret
+            }
+            
             
 
     async def create_project(
-        self, project_schema: ProjectCreateRequestSchema, user_id: int
+        self, project_schema: ProjectCreateRequestSchema, user: User
     ) -> Project:
         project_complete_schema = ProjectCreateSchema(
-            **project_schema.model_dump(), owner_id=user_id
+            **project_schema.model_dump(), owner_id=user.id
         )
-        return await self.repo.create_project(project_complete_schema)
-
+        project = await self.repo.create_project(project_complete_schema)
+        repo_full_name = project.owner.username + '/' + project.title
+        
+        wh_data_raw = await self.create_webhook(repo_full_name, user.github_token)
+        
+        wh_data = WebhookDataCreateSchema(
+            webhook_id=wh_data_raw['wh_id'],
+            webhook_secret=wh_data_raw['secret'],
+            repo_full_name=repo_full_name
+        )
+        print('update')
+        print(wh_data)
+        project = await self.repo.set_wh_data(project, wh_data)
+        
+        return project
+    
     async def _get_project_or_403(self, project_id: int, user_id: int) -> Project:
         project = await self.repo.get_project_by_id(project_id)
         if not project:

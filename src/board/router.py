@@ -1,4 +1,4 @@
-from fastapi import Depends
+from fastapi import Depends, Request
 from fastapi.routing import APIRouter
 
 from src.board.schemas import ProjectRetrieveSchema, ProjectCreateRequestSchema, ProjectUpdateSchema
@@ -9,6 +9,7 @@ from src.board.dependencies import get_project_service
 
 
 projects_router = APIRouter()
+webhook_router = APIRouter()
 
 
 @projects_router.get('/', response_model=list[ProjectRetrieveSchema])
@@ -27,18 +28,6 @@ async def get_project_by_id(
 ):
     return await service.get_project_by_id(project_id, user.id)
 
-@projects_router.post(
-    '/',
-    response_model=ProjectRetrieveSchema,
-    status_code=201
-)
-async def create_project(
-    project_data: ProjectCreateRequestSchema,
-    user: User = Depends(get_user),
-    service: ProjectService = Depends(get_project_service)
-):
-    return await service.create_project(project_data, user.id)
-
 @projects_router.patch('/{project_id}', response_model=ProjectRetrieveSchema)
 async def update_project(
     project_id: int, 
@@ -56,11 +45,29 @@ async def delete_project(
 ):
     await service.delete_project(project_id, user.id)
 
-@projects_router.post('/wh')
-async def test_wh(
+@projects_router.post(
+    '/',
+    response_model=ProjectRetrieveSchema,
+    status_code=201
+)
+async def create_project(
+    project_data: ProjectCreateRequestSchema,
     user: User = Depends(get_user),
     service: ProjectService = Depends(get_project_service)
 ):
-    await service.create_webhook('test1', user.id)
+    return await service.create_project(project_data, user)
+
+
+@webhook_router.post('/webhook/event')
+async def webhook_callback(
+    request: Request
+):
+    signature = request.headers.get('x-hub-signature')  # TODO: verif with github_secret 
+    delivery = request.headers.get('x-github-delivery')  # TODO: save to redis, avoid double handling
     
+    response_data = await request.json()
     
+    if request.headers.get('x-github-event') == 'ping':
+        return {'wh': 'on'}
+    
+    return 

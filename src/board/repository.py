@@ -4,7 +4,7 @@ from sqlalchemy import select, delete
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.board.models import Project, Task
-from src.board.schemas import ProjectCreateSchema, ProjectUpdateSchema, TaskCreateSchema, TaskUpdateSchema
+from src.board.schemas import ProjectCreateSchema, ProjectUpdateSchema, TaskCreateSchema, TaskUpdateSchema, WebhookDataCreateSchema
 
 
 class ProjectRepository:
@@ -35,6 +35,14 @@ class ProjectRepository:
             setattr(project, k, v)
         await self.session.refresh(project)
         return project
+        
+    async def set_wh_data(self, project: Project, wh_data: WebhookDataCreateSchema) -> Project:
+        for k, v in wh_data.model_dump().items():
+            setattr(project, k, v)
+        await self.session.flush()
+        await self.session.refresh(project)
+        return project
+            
         
     async def delete_project(self, project_id: int) -> None:
         stmt = delete(Project).where(Project.id==project_id)
