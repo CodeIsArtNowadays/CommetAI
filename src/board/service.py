@@ -1,5 +1,7 @@
 import uuid
 import httpx
+import hmac
+import hashlib
 
 from src.auth.models import User
 from src.board.models import Project
@@ -145,6 +147,21 @@ class WebhookService:
     async def get_commits_from_webhook_callback(self):
         pass
     
-    async def verify_webhook_request(self):
-        pass
+    async def verify_webhook_request(
+        self,
+        signature: str | None,
+        project_webhook_secret: str,
+        body: bytes
+    ):
+        if not signature:
+            raise Exception  # TODO: exc
         
+        expected = 'sha256=' + hmac.new(
+            project_webhook_secret.encode(),
+            body,
+            hashlib.sha256
+        ).hexdigest()
+        
+        if not hmac.compare_digest(expected, signature):
+            return 400 # TODO: exc
+        return True

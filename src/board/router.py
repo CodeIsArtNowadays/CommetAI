@@ -8,10 +8,10 @@ from fastapi.routing import APIRouter
 
 from config import settings
 from src.board.schemas import ProjectRetrieveSchema, ProjectCreateRequestSchema, ProjectUpdateSchema
-from src.board.service import ProjectService
+from src.board.service import ProjectService, WebhookService
 from src.auth.models import User
 from src.core.dependencies import get_user
-from src.board.dependencies import get_project_service
+from src.board.dependencies import get_project_service, get_webhook_service
 
 
 projects_router = APIRouter()
@@ -67,7 +67,8 @@ async def create_project(
 @webhook_router.post('/webhook/event')
 async def webhook_callback(
     request: Request,
-    project_service: ProjectService = Depends(get_project_service)
+    project_service: ProjectService = Depends(get_project_service),
+    webhook_service: WebhookService = Depends(get_webhook_service)
 ):
     body = await request.body()
     response_data = json.loads(body)
@@ -87,19 +88,8 @@ async def webhook_callback(
         
         signature = request.headers.get('x-hub-signature-256')
         
-        if not signature:
+        if not webhook_service.verify_webhook_request(signature, project.webhook_secret, body):
             raise Exception  # TODO: exc
-        
-        secret = project.webhook_secret
-        
-        expected = 'sha256=' + hmac.new(
-            secret.encode(),
-            body,
-            hashlib.sha256
-        ).hexdigest()
-        
-        if not hmac.compare_digest(expected, signature):
-            return 400 # TODO: exc
             
         
         # Commits handling
