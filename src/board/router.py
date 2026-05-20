@@ -1,12 +1,8 @@
-import hashlib
-import hmac
 import json
 
-import httpx
-from fastapi import Depends, Request
+from fastapi import Depends, Request, Response, BackgroundTasks
 from fastapi.routing import APIRouter
 
-from config import settings
 from src.board.schemas import ProjectRetrieveSchema, ProjectCreateRequestSchema, ProjectUpdateSchema
 from src.board.service import ProjectService, WebhookService
 from src.auth.models import User
@@ -24,7 +20,6 @@ async def get_all_projects(
     service: ProjectService = Depends(get_project_service),
 ):
     return await service.get_all_project_by_user(user.id)
-
 
 @projects_router.get('/{project_id}', response_model=ProjectRetrieveSchema)
 async def get_project_by_id(
@@ -67,61 +62,39 @@ async def create_project(
 @webhook_router.post('/webhook/event')
 async def webhook_callback(
     request: Request,
+    background_tasks: BackgroundTasks,
     project_service: ProjectService = Depends(get_project_service),
-    webhook_service: WebhookService = Depends(get_webhook_service)
+    webhook_service: WebhookService = Depends(get_webhook_service),
 ):
     body = await request.body()
-    response_data = json.loads(body)
-    
     event = request.headers.get('x-github-event')
-    delivery = request.headers.get('x-github-delivery')  # TODO: save to redis, avoid double handling
-    
     if event == 'ping':
-        print('ping')
-        return 200
-        
+        return Response(status_code=200)
+    
+    
+    delivery = request.headers.get('x-github-delivery')  # TODO: save to redis, avoid double handling -> verify_event
+    
+
     if event == 'push':
-        
+        response_data = json.loads(body)
         repo_full_name = response_data['repository']['full_name']
 
         project = await project_service.repo.get_project_by_repo_full_name(repo_full_name)
         
         signature = request.headers.get('x-hub-signature-256')
         
-        if not webhook_service.verify_webhook_request(signature, project.webhook_secret, body):
+        if not signature:
             raise Exception  # TODO: exc
-            
         
-        # Commits handling
-        # 
+        if not await webhook_service.verify_webhook_request(signature, project.webhook_secret, body):
+            raise Exception  # TODO: exc
         
-        for commit in response_data['commits']:
-            commit_id = commit['id']
-            
-            async with httpx.AsyncClient() as client:
-                url = f'https://api.github.com/repos/{repo_full_name}/commits/{commit_id}'
-                headers = {
-                    'Authorization': f'Bearer {project.owner.github_token}',
-                    'Accept': 'application/vnd.github+json',
-                    'X-GitHub-Api-Version': '2022-11-28'
-                }
-                response = await client.get(
-                    url,
-                    headers=headers
-                )
-
-                response_data = response.json()
-                
-                commit_data = {
-                    'sha': response_data['sha'],
-                    'commit_message': response_data.get('commit').get('message'),
-                    'commit_author_name': response_data.get('commit').get('author').get('name'),
-                    'commit_created': response_data.get('commit').get('author').get('date'),
-                    'additions': response_data.get('stats').get('additions'),
-                    'deletions': response_data.get('stats').get('deletions'),
-                    'files': response_data.get('files')
-                }
-                
-                print(commit_data)
+        push_data = {
+            'commits': response_data['commits'],
+            'repo_full_name': repo_full_name,
+            'owner_github_token': project.owner.github_token
+        }
+        
+        background_tasks.add_task(webhook_service.handle_push, push_data)
     
-    return 
+    return Response(status_code=200)

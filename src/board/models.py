@@ -36,7 +36,7 @@ class Task(Base):
 
     id: Mapped[int] = mapped_column(primary_key=True)
     title: Mapped[str] = mapped_column(String(63))
-    description: Mapped[str | None] = mapped_column(Text, nullable=True)
+    description: Mapped[str | None] = mapped_column(Text(), nullable=True)
     due_time: Mapped[datetime] = mapped_column()
     is_done: Mapped[bool] = mapped_column(default=False)
     project_id: Mapped[int] = mapped_column(ForeignKey('projects.id'))
@@ -45,6 +45,23 @@ class Task(Base):
     assignee: Mapped[User] = relationship('User', lazy='joined')
     project: Mapped[Project] = relationship(Project, back_populates='tasks')
 
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now()
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
+    )
+    
+
+class Commit(Base):
+    __tablename__ = 'commits'
+    
+    id: Mapped[int] = mapped_column(primary_key=True)
+    commit_info: Mapped[str] = mapped_column(Text())
+    summary: Mapped[str] = mapped_column(String(), nullable=True)
+    
+    project_id: Mapped[int] = mapped_column(ForeignKey('project.id'))
+    
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now()
     )

@@ -3,7 +3,10 @@ import httpx
 import hmac
 import hashlib
 
+from typing_extensions import List
+
 from src.auth.models import User
+from src.ai.service import AiService
 from src.board.models import Project
 from src.board.repository import ProjectRepository
 from src.board.schemas import (
@@ -15,45 +18,16 @@ from src.board.schemas import (
 from src.core.exceptions import (
     ProjectAccessIsNotAllowedException,
     ProjectNotFoundException,
+    GithubUnAutharize,
+    GithubApiException
 )
 
 
 class ProjectService:
-    def __init__(self, repo: ProjectRepository):
+    def __init__(self, repo: ProjectRepository, webhook_service: WebhookService):
         self.repo = repo
         self.base_url = "https://api.github.com"
-
-    async def create_webhook(self, repo_full_name, owner_github_token: str):
-
-        async with httpx.AsyncClient() as client:
-            headers = {
-                "Accept": "application/vnd.github+json",
-                "X-GitHub-Api-Version": "2022-11-28",
-                "Authorization": f"Bearer {owner_github_token}",
-            }
-            uri = self.base_url + f"/repos/{repo_full_name}/hooks"
-            secret = str(uuid.uuid4())
-            response = await client.post(
-                uri,
-                headers=headers,
-                json={
-                    "name": "web",
-                    "active": True,
-                    "events": ["push"],
-                    "config": {
-                        "url": "https://peddling-unsure-unpaid.ngrok-free.dev/webhook/event",
-                        "content_type": "json",
-                        "secret": secret,
-                    },
-                },
-            )
-            if not response.status_code == 201:
-                raise Exception # TODO: exc
-            response_data = response.json()
-            return {
-                'wh_id': response_data['id'],
-                'secret': secret
-            }
+        self.webhook_service = webhook_service
             
     async def create_project(
         self, project_schema: ProjectCreateRequestSchema, user: User
@@ -64,15 +38,14 @@ class ProjectService:
         project = await self.repo.create_project(project_complete_schema)
         repo_full_name = project.owner.username + '/' + project.title
         
-        wh_data_raw = await self.create_webhook(repo_full_name, user.github_token)
+        wh_data_raw = await self.webhook_service.create_webhook(repo_full_name, user.github_token)
         
         wh_data = WebhookDataCreateSchema(
             webhook_id=wh_data_raw['wh_id'],
             webhook_secret=wh_data_raw['secret'],
             repo_full_name=repo_full_name
         )
-        print('update')
-        print(wh_data)
+        
         project = await self.repo.set_wh_data(project, wh_data)
         
         return project
@@ -105,8 +78,8 @@ class ProjectService:
 
 class WebhookService:
     
-    def __init__(self):
-        pass
+    def __init__(self, ai_service: AiService):
+        self.ai_service = ai_service
         
     async def create_webhook(self, repo_full_name: str, owner_github_token: str):
         
@@ -136,7 +109,7 @@ class WebhookService:
             )
             
             if not response.status_code == 201:
-                raise Exception  # TODO: exc
+                raise GithubApiException(response.status_code)
                 
             response_data = response.json()
             return {
@@ -144,8 +117,38 @@ class WebhookService:
                 'secret': secret
             }
     
-    async def get_commits_from_webhook_callback(self):
-        pass
+    async def get_commits_from_webhook(self, commits: List, repo_full_name: str, owner_github_token: str):
+        res = []
+        async with httpx.AsyncClient() as client:
+            for commit in commits:
+                commit_id = commit['id']
+                
+                
+                url = f'https://api.github.com/repos/{repo_full_name}/commits/{commit_id}'
+                headers = {
+                    'Authorization': f'Bearer {owner_github_token}',
+                    'Accept': 'application/vnd.github+json',
+                    'X-GitHub-Api-Version': '2022-11-28'
+                }
+                response = await client.get(
+                    url,
+                    headers=headers
+                )
+
+                response_data = response.json()
+                
+                commit_data = {
+                    'sha': response_data['sha'],
+                    'commit_message': response_data.get('commit').get('message'),
+                    'commit_author_name': response_data.get('commit').get('author').get('name'),
+                    'commit_created': response_data.get('commit').get('author').get('date'),
+                    'additions': response_data.get('stats').get('additions'),
+                    'deletions': response_data.get('stats').get('deletions'),
+                    'files': response_data.get('files')
+                }
+                
+                res.append(commit_data)
+        return res
     
     async def verify_webhook_request(
         self,
@@ -154,7 +157,7 @@ class WebhookService:
         body: bytes
     ):
         if not signature:
-            raise Exception  # TODO: exc
+            raise GithubApiException(401)
         
         expected = 'sha256=' + hmac.new(
             project_webhook_secret.encode(),
@@ -163,5 +166,16 @@ class WebhookService:
         ).hexdigest()
         
         if not hmac.compare_digest(expected, signature):
-            return 400 # TODO: exc
+            raise GithubUnAutharize()
         return True
+    
+    async def handle_push(self, data: dict):
+        commits = data['commits']
+        repo_full_name = data['repo_full_name']
+        owner_github_token = data['owner_github_token']
+        
+        diffs = await self.get_commits_from_webhook(commits, repo_full_name, owner_github_token)
+        
+        # AI 
+        return diffs
+        

@@ -11,6 +11,7 @@ from src.auth.repository import UserRepository
 from src.auth.schemas import (
     UserCreateWithGithubSchema,
 )
+from src.core.exceptions import GithubApiException, GithubUnAutharize
 
 
 class UserService:
@@ -66,13 +67,13 @@ class UserService:
             )
 
             if not response.status_code == 200:
-                raise Exception # TODO: exc
+                raise GithubApiException(status_code=response.status_code)
             
             response_data = response.json()
             access_token = response_data.get("access_token")
             
             if not access_token:
-                raise Exception  # TODO: exc
+                raise GithubUnAutharize()
 
             user = await client.get(
                 "https://api.github.com/user",
