@@ -60,7 +60,7 @@ class Commit(Base):
     commit_info: Mapped[str] = mapped_column(Text())
     summary: Mapped[str] = mapped_column(String(), nullable=True)
     
-    project_id: Mapped[int] = mapped_column(ForeignKey('project.id'))
+    project_id: Mapped[int] = mapped_column(ForeignKey('projects.id'))
     
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now()

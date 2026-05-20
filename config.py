@@ -15,6 +15,8 @@ class Settings(BaseSettings):
     GITHUB_CLIENT_ID: str = ''
     GITHUB_CLIENT_SECRET: str = ''
     
+    OPENAI_TOKEN: str = ''
+    
     model_config = SettingsConfigDict(env_file='.env')
     
     @property
