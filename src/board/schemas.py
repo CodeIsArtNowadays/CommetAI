@@ -69,3 +69,13 @@ class TaskUpdateSchema(BaseModel):
     due_time: datetime | None = Field(default=None)
     
     
+class CommitCreateSchema(BaseModel):
+    sha: str
+    commit_info: str
+    summary: str
+    technical: str
+    process: str
+    risks: str
+    project_id: int
+    conventional_commits: bool
+    author: str

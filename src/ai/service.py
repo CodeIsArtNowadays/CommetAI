@@ -1,5 +1,7 @@
 from openai import AsyncOpenAI
 
+from src.ai.prompts import summarize_commit_system_prompt
+
 
 class AiService:
     def __init__(self, client: AsyncOpenAI):
@@ -17,8 +19,17 @@ class AiService:
         response = response.choices[0].message
         return response.content
 
-
-
+    async def summarize_commit(self, commit_info: str):
+        
+        user_prompt = f'Commit to analyse: {commit_info}'
+        
+        messages = [
+            {'role': 'system', 'content': summarize_commit_system_prompt},
+            {'role': 'user', 'content': user_prompt}
+        ]
+        answer = await self.ask_llm(messages)
+        print(answer)
+        return answer
 
 # commits = list[]
 # llm -> for commit -> summary commit

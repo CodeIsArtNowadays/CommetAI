@@ -1,3 +1,4 @@
+import json
 import uuid
 import httpx
 import hmac
@@ -8,12 +9,13 @@ from typing_extensions import List
 from src.auth.models import User
 from src.ai.service import AiService
 from src.board.models import Project
-from src.board.repository import ProjectRepository
+from src.board.repository import CommitRepository, ProjectRepository
 from src.board.schemas import (
     ProjectCreateRequestSchema,
     ProjectCreateSchema,
     ProjectUpdateSchema,
     WebhookDataCreateSchema,
+    CommitCreateSchema
 )
 from src.core.exceptions import (
     ProjectAccessIsNotAllowedException,
@@ -78,8 +80,9 @@ class ProjectService:
 
 class WebhookService:
     
-    def __init__(self, ai_service: AiService):
+    def __init__(self, ai_service: AiService, commit_repo: CommitRepository):
         self.ai_service = ai_service
+        self.commit_repo = commit_repo
         
     async def create_webhook(self, repo_full_name: str, owner_github_token: str):
         
@@ -103,7 +106,7 @@ class WebhookService:
                     'config': {
                         'secret': secret,
                         'url': 'https://peddling-unsure-unpaid.ngrok-free.dev/webhook/event',
-                        'content': 'json'
+                        'content_type': 'json'
                     }
                 }
             )
@@ -116,7 +119,7 @@ class WebhookService:
                 'wh_id': response_data['id'],
                 'secret': secret
             }
-    
+            
     async def get_commits_from_webhook(self, commits: List, repo_full_name: str, owner_github_token: str):
         res = []
         async with httpx.AsyncClient() as client:
@@ -150,6 +153,7 @@ class WebhookService:
                 res.append(commit_data)
         return res
     
+    
     async def verify_webhook_request(
         self,
         signature: str | None,
@@ -167,15 +171,40 @@ class WebhookService:
         
         if not hmac.compare_digest(expected, signature):
             raise GithubUnAutharize()
+        print('Verified')
         return True
     
     async def handle_push(self, data: dict):
-        commits = data['commits']
+        commits_raw = data['commits']
         repo_full_name = data['repo_full_name']
         owner_github_token = data['owner_github_token']
         
-        diffs = await self.get_commits_from_webhook(commits, repo_full_name, owner_github_token)
-        
-        # AI 
-        return diffs
+        commits = await self.get_commits_from_webhook(commits_raw, repo_full_name, owner_github_token)
+        print(commits)
+
+        for commit in commits:
+            answer = await self.ai_service.summarize_commit(commit)
+            
+            if not answer:
+                raise Exception # TODO: exc
+
+            answer = json.loads(answer)
+            
+            commit_data = CommitCreateSchema(
+                commit_info=str(commit),
+                project_id=data['project_id'],
+                sha=answer['sha'],
+                summary=answer['summary'],
+                technical=answer['technical'],
+                process=answer['process'],
+                risks=answer['risks'],
+                conventional_commits=answer['conventional_commits'],
+                author=answer['author']
+            )
+            
+            await self.commit_repo.create_commit(commit_data)
+            
+            return {'status': 'ok'}
+            
+            
         

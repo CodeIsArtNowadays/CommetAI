@@ -66,6 +66,7 @@ async def webhook_callback(
     project_service: ProjectService = Depends(get_project_service),
     webhook_service: WebhookService = Depends(get_webhook_service),
 ):
+    print('Delievered')
     body = await request.body()
     event = request.headers.get('x-github-event')
     if event == 'ping':
@@ -73,9 +74,10 @@ async def webhook_callback(
     
     
     delivery = request.headers.get('x-github-delivery')  # TODO: save to redis, avoid double handling -> verify_event
-    
+    del delivery
 
     if event == 'push':
+        print('Pushed')
         response_data = json.loads(body)
         repo_full_name = response_data['repository']['full_name']
 
@@ -90,11 +92,12 @@ async def webhook_callback(
             raise Exception  # TODO: exc
         
         push_data = {
+            'project_id': project.id,
             'commits': response_data['commits'],
             'repo_full_name': repo_full_name,
             'owner_github_token': project.owner.github_token
         }
-        
+        print('BkG')
         background_tasks.add_task(webhook_service.handle_push, push_data)
     
     return Response(status_code=200)

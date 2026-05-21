@@ -56,9 +56,14 @@ class Task(Base):
 class Commit(Base):
     __tablename__ = 'commits'
     
-    id: Mapped[int] = mapped_column(primary_key=True)
+    sha: Mapped[str] = mapped_column(primary_key=True, unique=True)
     commit_info: Mapped[str] = mapped_column(Text())
-    summary: Mapped[str] = mapped_column(String(), nullable=True)
+    summary: Mapped[str] = mapped_column()
+    technical: Mapped[str] = mapped_column()
+    process: Mapped[str] = mapped_column()
+    risks: Mapped[str] = mapped_column()
+    conventional_commits: Mapped[bool] = mapped_column()
+    author: Mapped[str] = mapped_column()
     
     project_id: Mapped[int] = mapped_column(ForeignKey('projects.id'))
     
