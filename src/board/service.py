@@ -37,7 +37,7 @@ class ProjectService:
         project_complete_schema = ProjectCreateSchema(
             **project_schema.model_dump(), owner_id=user.id
         )
-        project = await self.repo.create_project(project_complete_schema)
+        project = await self.repo.create(project_complete_schema)
         repo_full_name = project.owner.username + '/' + project.title
         
         wh_data_raw = await self.webhook_service.create_webhook(repo_full_name, user.github_token)
@@ -53,7 +53,7 @@ class ProjectService:
         return project
     
     async def _get_project_or_403(self, project_id: int, user_id: int) -> Project:
-        project = await self.repo.get_project_by_id(project_id)
+        project = await self.repo.get_by_id(project_id)
         if not project:
             raise ProjectNotFoundException()
         if not project.owner_id == user_id:
@@ -71,11 +71,11 @@ class ProjectService:
         self, project_id: int, update_project: ProjectUpdateSchema, user_id: int
     ) -> Project:
         await self._get_project_or_403(project_id, user_id)
-        return await self.repo.update_project(project_id, update_project)
+        return await self.repo.update(project_id, update_project)
 
     async def delete_project(self, project_id: int, user_id: int) -> None:
         await self._get_project_or_403(project_id, user_id)
-        await self.repo.delete_project(project_id)
+        await self.repo.delete(project_id)
 
 
 class WebhookService:
@@ -202,7 +202,7 @@ class WebhookService:
                 author=answer['author']
             )
             
-            await self.commit_repo.create_commit(commit_data)
+            await self.commit_repo.create(commit_data)
             
             return {'status': 'ok'}
             

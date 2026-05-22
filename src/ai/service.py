@@ -28,7 +28,6 @@ class AiService:
             {'role': 'user', 'content': user_prompt}
         ]
         answer = await self.ask_llm(messages)
-        print(answer)
         return answer
 
 # commits = list[]
