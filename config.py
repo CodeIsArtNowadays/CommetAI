@@ -17,6 +17,8 @@ class Settings(BaseSettings):
     
     OPENAI_TOKEN: str = ''
     
+    webhook_url: str = 'https://peddling-unsure-unpaid.ngrok-free.dev/webhook/event'
+    
     model_config = SettingsConfigDict(env_file='.env')
     
     @property

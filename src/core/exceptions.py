@@ -29,3 +29,12 @@ class GithubApiException(CustomException):
 class GithubUnAutharize(CustomException):
     def __init__(self):
         super().__init__('Github bad autharization', status.HTTP_401_UNAUTHORIZED)
+        
+class WebhookNotVerify(CustomException):
+    def __init__(self):
+        super().__init__('Webhook not verify', status.HTTP_401_UNAUTHORIZED)
+        
+
+class LLMException(CustomException):
+    def __init__(self):
+        super().__init__('LLM error', status.HTTP_500_INTERNAL_SERVER_ERROR)

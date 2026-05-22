@@ -14,7 +14,6 @@ Rules:
 
 Return only valid JSON, no markdown, no extra text:
 {
-  "sha": "commit sha",
   "author": "author name",
   "summary": "2-3 sentence overview",
   "technical": "technical analysis",
@@ -22,7 +21,19 @@ Return only valid JSON, no markdown, no extra text:
   "process": "commit quality assessment",
   "risks": "risk1. risk2",
   "conventional_commits": true/false
+}'''
+
+describe_project_system_prompt='''
+You are a Senior Fullstack Developer and System Analyst.
+Analize provided initial (first) git commit, to describe a project.
+
+Rules:
+- Be concise, no filler words
+- Lead with the most important features
+
+Return only valid JSON, no markdown, no extra text:
+{
+    "description": "5-10 sentences"
 }
-
-
 '''
+

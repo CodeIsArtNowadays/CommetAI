@@ -3,8 +3,9 @@ import json
 from fastapi import Depends, Request, Response, BackgroundTasks
 from fastapi.routing import APIRouter
 
+from src.core.exceptions import WebhookNotVerify
 from src.board.schemas import ProjectRetrieveSchema, ProjectCreateRequestSchema, ProjectUpdateSchema
-from src.board.service import ProjectService, WebhookService
+from src.board.project_service import ProjectService, WebhookService
 from src.auth.models import User
 from src.core.dependencies import get_user
 from src.board.dependencies import get_project_service, get_webhook_service
@@ -66,7 +67,6 @@ async def webhook_callback(
     project_service: ProjectService = Depends(get_project_service),
     webhook_service: WebhookService = Depends(get_webhook_service),
 ):
-    print('Delievered')
     body = await request.body()
     event = request.headers.get('x-github-event')
     if event == 'ping':
@@ -77,7 +77,6 @@ async def webhook_callback(
     del delivery
 
     if event == 'push':
-        print('Pushed')
         response_data = json.loads(body)
         repo_full_name = response_data['repository']['full_name']
 
@@ -86,18 +85,18 @@ async def webhook_callback(
         signature = request.headers.get('x-hub-signature-256')
         
         if not signature:
-            raise Exception  # TODO: exc
+            raise WebhookNotVerify
         
         if not await webhook_service.verify_webhook_request(signature, project.webhook_secret, body):
-            raise Exception  # TODO: exc
+            raise WebhookNotVerify  
         
         push_data = {
             'project_id': project.id,
+            'project_description': project.description,
             'commits': response_data['commits'],
             'repo_full_name': repo_full_name,
             'owner_github_token': project.owner.github_token
         }
-        print('BkG')
         background_tasks.add_task(webhook_service.handle_push, push_data)
     
     return Response(status_code=200)

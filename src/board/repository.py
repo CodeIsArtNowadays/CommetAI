@@ -73,11 +73,11 @@ class TaskRepository(BaseRepository[Task]):
         stmt = select(Task).where(Task.assignee_id == user_id)
         res = await self.session.execute(stmt)
         return res.scalars().all()
-        
-    async def get_task_by_id(self, task_id: int) -> Task:
-        stmt = select(Task).where(Task.id == task_id)
+    
+    async def get_all_project_tasks(self, project_id: int) -> Sequence[Task]:
+        stmt = select(Task).where(Task.project_id == project_id)
         res = await self.session.execute(stmt)
-        return res.scalar()
+        return res.scalars().all()
 
         
 class CommitRepository(BaseRepository[Commit]):
