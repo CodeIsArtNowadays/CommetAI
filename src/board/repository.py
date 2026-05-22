@@ -1,10 +1,10 @@
 from typing import Generic, Sequence, TypeVar
 
-from sqlalchemy import select, delete
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.board.models import Project, Task, Commit
-from src.board.schemas import ProjectCreateSchema, ProjectUpdateSchema, TaskCreateSchema, TaskUpdateSchema, WebhookDataCreateSchema, CommitCreateSchema
+from src.board.schemas import WebhookDataCreateSchema
 
 
 ModelType = TypeVar('ModelType')
