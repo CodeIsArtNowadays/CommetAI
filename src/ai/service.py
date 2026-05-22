@@ -1,6 +1,10 @@
+import json
+
+from typing import Sequence
 from openai import AsyncOpenAI
 
-from src.ai.prompts import summarize_commit_system_prompt, describe_project_system_prompt
+from src.ai.prompts import create_task_system_prompt, summarize_commit_system_prompt
+from src.board.models import Task
 from src.core.exceptions import LLMException
 
 
@@ -18,6 +22,8 @@ class AiService:
         )
 
         response = response.choices[0].message
+        if not response.content:
+            raise LLMException
         return response.content
 
     async def summarize_commit(self, commit_info: str):
@@ -29,21 +35,18 @@ class AiService:
             {'role': 'user', 'content': user_prompt}
         ]
         answer = await self.ask_llm(messages)
-        if not answer:
-            raise LLMException
         return answer
 
-    async def describe_project(self, diff: str):
-        user_prompt = f'Describe project by this first commit {diff}'
+    async def create_task(self, commit_summary: str, tasks: Sequence[Task]):
+        user_prompt = f'Last commit summary: {commit_summary}. Already existing tasks: {tasks}'
+        
         messages = [
-            {'role': 'system', 'content': describe_project_system_prompt},
+            {'role': 'system', 'content': create_task_system_prompt},
             {'role': 'user', 'content': user_prompt}
         ]
-        if messages:
-            pass
+        print(user_prompt)
+        
+        answer = await self.ask_llm(messages)
+        answer = json.loads(answer)
+        return answer
     
-    
-            
-# commits = list[]
-# llm -> for commit -> summary commit
-# create next logical task based on last commit

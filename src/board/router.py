@@ -1,8 +1,10 @@
 import json
+from multiprocessing.context import Process
 
 from fastapi import Depends, Request, Response, BackgroundTasks
 from fastapi.routing import APIRouter
 
+from src.board.process_push import ProcessPushUseCase
 from src.core.exceptions import WebhookNotVerify
 from src.board.schemas import ProjectRetrieveSchema, ProjectCreateRequestSchema, ProjectUpdateSchema
 from src.board.project_service import ProjectService, WebhookService
@@ -66,6 +68,7 @@ async def webhook_callback(
     background_tasks: BackgroundTasks,
     project_service: ProjectService = Depends(get_project_service),
     webhook_service: WebhookService = Depends(get_webhook_service),
+    use_case: ProcessPushUseCase = Depends(ProcessPushUseCase)
 ):
     body = await request.body()
     event = request.headers.get('x-github-event')
@@ -97,6 +100,7 @@ async def webhook_callback(
             'repo_full_name': repo_full_name,
             'owner_github_token': project.owner.github_token
         }
-        background_tasks.add_task(webhook_service.handle_push, push_data)
+        background_tasks.add_task(use_case, push_data)
     
     return Response(status_code=200)
+

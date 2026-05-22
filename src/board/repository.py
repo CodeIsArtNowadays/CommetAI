@@ -74,11 +74,19 @@ class TaskRepository(BaseRepository[Task]):
         res = await self.session.execute(stmt)
         return res.scalars().all()
     
-    async def get_all_project_tasks(self, project_id: int) -> Sequence[Task]:
+    async def get_all_project_undone_tasks(self, project_id: int) -> Sequence[Task]:
         stmt = select(Task).where(Task.project_id == project_id)
         res = await self.session.execute(stmt)
         return res.scalars().all()
 
+    async def done_task(self, task_id: int) -> Task:
+        task = await self.get_by_id(task_id)
+        if not task:
+            raise Exception  # TODO: RepoExc(self.model, 404)
+        task.is_done = True
+        await self.session.flush()
+        await self.session.refresh(task)
+        return task
         
 class CommitRepository(BaseRepository[Commit]):
     

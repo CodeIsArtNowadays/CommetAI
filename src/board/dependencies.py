@@ -3,7 +3,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.ai.dependencies import get_ai_service
 from src.ai.service import AiService
-from src.board.repository import CommitRepository, ProjectRepository
+from src.board.repository import CommitRepository, ProjectRepository, TaskRepository
 from src.board.project_service import ProjectService, WebhookService
 from src.core.database import get_db
 
@@ -25,3 +25,8 @@ async def get_project_service(
 ) -> ProjectService:
     repo = ProjectRepository(session)
     return ProjectService(repo, webhook_service)
+    
+async def get_task_repo(
+    session: AsyncSession = Depends(get_db)
+) -> TaskRepository:
+    return TaskRepository(session)

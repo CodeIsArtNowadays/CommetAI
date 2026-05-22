@@ -104,7 +104,6 @@ class WebhookService:
         print("Verified")
         return True
     
-    
     async def handle_push(self, data: dict):
         commits_raw = data["commits"]
         repo_full_name = data["repo_full_name"]
@@ -132,7 +131,11 @@ class WebhookService:
             )
 
             await self.commit_repo.create(commit_data)
-
+            
+            existing_tasks = []
+            task = await self.ai_service.create_task(commit_data.summary, existing_tasks)
+            
+            print(task)
         # if not data["project_description"]:
         #     description = await self.ai_service.describe_project('asd')
         
