@@ -1,5 +1,9 @@
+import redis.asyncio as redis
+
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
+
+from config import settings
 
 from src.auth.dependencies import get_user_service
 from src.auth.service import UserService
@@ -40,4 +44,5 @@ async def get_user(
     return await user_service.repo.get_user_by_id(user_id)
     
     
-    
+async def get_redis_cli():
+    yield redis.Redis(host=settings.REDIS_HOST, port=settings.REDIS_PORT, db=0)

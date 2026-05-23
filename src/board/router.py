@@ -2,13 +2,14 @@ import json
 
 from fastapi import Depends, Request, Response, BackgroundTasks
 from fastapi.routing import APIRouter
+from redis.asyncio import Redis
 
 from src.board.process_push import ProcessPushUseCase
 from src.core.exceptions import WebhookNotVerify
 from src.board.schemas import ProjectRetrieveSchema, ProjectCreateRequestSchema, ProjectUpdateSchema
 from src.board.project_service import ProjectService, WebhookService
 from src.auth.models import User
-from src.core.dependencies import get_user
+from src.core.dependencies import get_redis_cli, get_user
 from src.board.dependencies import get_project_service, get_webhook_service
 
 
@@ -67,7 +68,8 @@ async def webhook_callback(
     background_tasks: BackgroundTasks,
     project_service: ProjectService = Depends(get_project_service),
     webhook_service: WebhookService = Depends(get_webhook_service),
-    use_case: ProcessPushUseCase = Depends(ProcessPushUseCase)
+    use_case: ProcessPushUseCase = Depends(ProcessPushUseCase),
+    redis: Redis = Depends(get_redis_cli)
 ):
     body = await request.body()
     event = request.headers.get('x-github-event')
@@ -75,8 +77,14 @@ async def webhook_callback(
         return Response(status_code=200)
     
     
-    delivery = request.headers.get('x-github-delivery')  # TODO: save to redis, avoid double handling -> verify_event
-    del delivery
+    delivery = request.headers.get('x-github-delivery')
+    
+    delivery_check_error = (not bool(delivery)) or bool(await redis.get(delivery))
+    
+    if delivery_check_error:
+        raise WebhookNotVerify
+    else:
+        await redis.set(delivery, True, ex=604800)  # type: ignore
 
     if event == 'push':
         response_data = json.loads(body)
@@ -87,7 +95,7 @@ async def webhook_callback(
         signature = request.headers.get('x-hub-signature-256')
         
         if not signature:
-            raise WebhookNotVerify
+            raise WebhookNotVerify  
         
         if not await webhook_service.verify_webhook_request(signature, project.webhook_secret, body):
             raise WebhookNotVerify  
