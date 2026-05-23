@@ -9,7 +9,7 @@ class CustomException(Exception):
 
 class ProjectServiceException(CustomException):
     pass
-        
+
 
 class ProjectNotFoundException(ProjectServiceException):
     def __init__(self):

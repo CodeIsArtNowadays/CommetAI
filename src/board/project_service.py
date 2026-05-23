@@ -52,6 +52,9 @@ class ProjectService:
 
     async def get_project_by_id(self, project_id: int, user_id: int) -> Project:
         return await self._get_project_or_403(project_id, user_id)
+        
+    async def get_project(self, project_id) -> Project:
+        return await self.repo.get_by_id(project_id)
 
     async def get_all_project_by_user(self, user_id: int) -> list[Project]:
         res = await self.repo.get_all_project_by_user(user_id)

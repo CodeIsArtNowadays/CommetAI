@@ -35,7 +35,7 @@ class Task(Base):
     __tablename__ = 'tasks'
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    title: Mapped[str] = mapped_column(String(63))
+    title: Mapped[str] = mapped_column(String(256))
     commit_sha: Mapped[str] = mapped_column()
     description: Mapped[str | None] = mapped_column(Text(), nullable=True)
     due_time: Mapped[datetime] = mapped_column(nullable=True)

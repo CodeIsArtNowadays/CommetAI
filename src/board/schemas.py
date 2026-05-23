@@ -45,20 +45,21 @@ class ProjectNestedRetrieveSchema(BaseModel):
 
 class TaskBaseSchema(BaseModel):
     title: str
-    due_time: datetime
+    due_time: datetime | None = Field(default=None)
+    description: str | None = Field(default=None)
     is_done: bool = Field(default=False)
     
     
 class TaskRetrieveSchema(TaskBaseSchema):
     id: int
-    description: str | None = Field(default=None)
+    
     assignee: UserInfoSchema
     project: ProjectNestedRetrieveSchema
 
 
 class TaskCreateSchema(TaskBaseSchema):
     project_id: int
-    assignee_id: int
+    commit_sha: str
     
 
 class TaskUpdateSchema(BaseModel):

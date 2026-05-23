@@ -25,11 +25,11 @@ class ProcessPushUseCase:
         self.ai_service = ai_service
         self.project_service = project_service
 
-    async def _get_diffs_from_commits(
+    async def _get_commits_full_info(
         self, commits: list, repo_full_name: str, owner_github_token: str
     ):
 
-        diffs = []
+        commits_meta = []
         headers = {
             "Authorization": f"Bearer {owner_github_token}",
             "Accept": "application/vnd.github+json",
@@ -51,57 +51,78 @@ class ProcessPushUseCase:
                 commit_data = response.get("commit")
                 if not commit_data:
                     raise Exception  # TODO: exc
-
-                diff_data = {
+                
+                commit_data = {
                     "sha": response["sha"],
                     "commit_message": commit_data.get("message"),
                     "commit_author_name": commit_data.get("author").get("name"),
                     "commit_created": commit_data.get("author").get("date"),
-                    "additions": response.get("stats").get("additions"),
-                    "deletions": response.get("stats").get("deletions"),
-                    "files": response.get("files"),
+                    'diffs': {
+                        "additions": response.get("stats").get("additions"),
+                        "deletions": response.get("stats").get("deletions"),
+                        "files": response.get("files"),
+                    }
                 }
 
-                diffs.append(diff_data)
+                commits_meta.append(commit_data)
 
-        return diffs
+        return commits_meta
     
-    async def _get_undone_tasks_by_project_id(self, project_id: int):
-        return await self.task_repo.get_all_project_undone_tasks(project_id)
+    async def _get_undone_tasks_titles_by_project_id(self, project_id: int):
+        tasks = await self.task_repo.get_all_project_undone_tasks(project_id)
+        return [task.title for task in tasks]
+    
+    async def _create_project_description(self, commits: list, project_id: int):
+        project = await self.project_service.get_project(project_id)
+        answer = await self.ai_service.create_project_description(commits, project.title)
+        print('asdasdasd', answer['description'])
+        project = await self.project_service.repo.set_project_description(project, answer['description'])
         
     
     async def __call__(self, data: dict):
-
+        print('USE CASE START')
         commits = data["commits"]
         repo_full_name = data["repo_full_name"]
         owner_github_token = data["owner_github_token"]
+        project_id = data['project_id']
 
-        diffs = await self._get_diffs_from_commits(
+        commits_meta = await self._get_commits_full_info(
             commits, repo_full_name, owner_github_token
         )
+        existing_tasks = await self._get_undone_tasks_titles_by_project_id(project_id) 
 
-        for diff in diffs:
-            ai_response = json.loads(await self.ai_service.summarize_commit(diff))
+        for commit in commits_meta:
+            ai_data = {'commit_message': commit['commit_message'], 'diffs': commit['diffs']}
+            ai_response = json.loads(await self.ai_service.summarize_commit(json.dumps(ai_data)))
             
-            commit_data = CommitCreateSchema(
-                commit_info=str(diff),
-                project_id=data["project_id"],
-                sha=diff["sha"],
+            commit_create_data = CommitCreateSchema(
+                commit_info=json.dumps(commit),
+                project_id=project_id,
+                sha=commit["sha"],
                 summary=ai_response["summary"],
                 technical=ai_response["technical"],
                 process=ai_response["process"],
                 risks=ai_response["risks"],
                 conventional_commits=ai_response["conventional_commits"],
-                author=ai_response["author"],
+                author=commit["commit_author_name"],
             )
             
-            await self.commit_repo.create(commit_data)
+            await self.commit_repo.create(commit_create_data)
             
-            existing_tasks = await self._get_undone_tasks_by_project_id(data['project_id'])
-            print(existing_tasks)
+            new_task = await self.ai_service.create_task(commit_create_data.summary, existing_tasks)
             
-            new_task = await self.ai_service.create_task(commit_data.summary, existing_tasks)
+            new_task['project_id'] = project_id
+            new_task['commit_sha'] = commit['sha']
+            
             
             new_task_schema = TaskCreateSchema(**new_task)
 
-            await self.task_repo.create(new_task_schema)
+            task = await self.task_repo.create(new_task_schema)
+            existing_tasks.append(task.title)
+        
+        project_commits = list(await self.commit_repo.get_commits_for_project(project_id))
+        if len(project_commits) > 5:
+            await self._create_project_description(project_commits, project_id)
+        print('USE CASE END')
+        return {'ok': True}
+            

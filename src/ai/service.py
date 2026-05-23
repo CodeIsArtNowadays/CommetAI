@@ -1,10 +1,8 @@
 import json
 
-from typing import Sequence
 from openai import AsyncOpenAI
 
-from src.ai.prompts import create_task_system_prompt, summarize_commit_system_prompt
-from src.board.models import Task
+from src.ai.prompts import create_task_system_prompt, summarize_commit_system_prompt, describe_project_system_prompt
 from src.core.exceptions import LLMException
 
 
@@ -37,7 +35,7 @@ class AiService:
         answer = await self.ask_llm(messages)
         return answer
 
-    async def create_task(self, commit_summary: str, tasks: Sequence[Task]):
+    async def create_task(self, commit_summary: str, tasks: list[str]):
         user_prompt = f'Last commit summary: {commit_summary}. Already existing tasks: {tasks}'
         
         messages = [
@@ -50,3 +48,12 @@ class AiService:
         answer = json.loads(answer)
         return answer
     
+    async def create_project_description(self, commits: list, project_title: str):
+        user_prompt = f'Project: {project_title}, first 5 commits: {commits}'
+        
+        messages = [
+            {'role': 'system', 'content': describe_project_system_prompt},
+            {'role': 'user', 'content': user_prompt}
+        ]
+        
+        return json.loads(await self.ask_llm(messages))
