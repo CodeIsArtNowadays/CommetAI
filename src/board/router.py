@@ -6,7 +6,7 @@ from redis.asyncio import Redis
 
 from src.board.process_push import ProcessPushUseCase
 from src.core.exceptions import WebhookNotVerify
-from src.board.schemas import ProjectRetrieveSchema, ProjectCreateRequestSchema, ProjectUpdateSchema
+from src.board.schemas import ProjectRetrieveSchema, ProjectCreateRequestSchema, ProjectUpdateSchema, TasksAllRetreiveSchema
 from src.board.project_service import ProjectService, WebhookService
 from src.auth.models import User
 from src.core.dependencies import get_redis_cli, get_user
@@ -15,6 +15,9 @@ from src.board.dependencies import get_project_service, get_webhook_service
 
 projects_router = APIRouter()
 webhook_router = APIRouter()
+tasks_router = APIRouter(prefix='/projects/{project_id}')
+
+
 
 
 @projects_router.get('/', response_model=list[ProjectRetrieveSchema])
@@ -30,7 +33,13 @@ async def get_project_by_id(
     user: User = Depends(get_user),
     service: ProjectService = Depends(get_project_service)
 ):
-    return await service.get_project_by_id(project_id, user.id)
+    return await service.repo.get_project_with_tasks_and_commits(project_id)
+
+@tasks_router.get('/tasks', response_model=TasksAllRetreiveSchema)
+async def get_all_tasks_by_project(project_id: int, user: User = Depends(get_user),
+service: ProjectService = Depends(get_project_service)):
+    return await service.repo.get_all_tasks_by_project_id(project_id)
+
 
 @projects_router.patch('/{project_id}', response_model=ProjectRetrieveSchema)
 async def update_project(

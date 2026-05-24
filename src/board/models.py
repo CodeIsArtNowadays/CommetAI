@@ -20,7 +20,9 @@ class Project(Base):
     webhook_secret: Mapped[str] = mapped_column(nullable=True, unique=True)
     
     owner: Mapped[User] = relationship('User', lazy='joined')
-    tasks: Mapped['Task'] = relationship('Task', back_populates='project')
+    tasks: Mapped[list['Task']] = relationship('Task', back_populates='project', lazy='noload')
+    commits: Mapped[list['Commit']] = relationship('Commit', back_populates='project', lazy='noload')
+    
     
     
     created_at: Mapped[datetime] = mapped_column(
@@ -41,8 +43,8 @@ class Task(Base):
     due_time: Mapped[datetime] = mapped_column(nullable=True)
     is_done: Mapped[bool] = mapped_column(default=False)
     project_id: Mapped[int] = mapped_column(ForeignKey('projects.id'))
-    
-    project: Mapped[Project] = relationship(Project, back_populates='tasks')
+
+    project: Mapped[Project] = relationship(Project)
 
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now()
@@ -65,6 +67,8 @@ class Commit(Base):
     author: Mapped[str] = mapped_column()
     
     project_id: Mapped[int] = mapped_column(ForeignKey('projects.id'))
+    
+    project: Mapped[Project] = relationship(Project)
     
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now()

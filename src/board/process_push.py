@@ -70,7 +70,7 @@ class ProcessPushUseCase:
     
     async def _get_undone_tasks_titles_by_project_id(self, project_id: int):
         tasks = await self.task_repo.get_all_project_undone_tasks(project_id)
-        return [task.title for task in tasks]
+        return [{"task_id": task.id, "task_title": task.title} for task in tasks]
     
     async def _create_project_description(self, commits: list, project_id: int):
         project = await self.project_service.get_project(project_id)
@@ -109,16 +109,21 @@ class ProcessPushUseCase:
             
             await self.commit_repo.create(commit_create_data)
             
-            new_task = await self.ai_service.create_task(commit_create_data.summary, existing_tasks)
+            tasks_answer = await self.ai_service.create_task(commit_create_data.summary, existing_tasks)
             
-            new_task['project_id'] = project_id
-            new_task['commit_sha'] = commit['sha']
+            done_tasks_ids = tasks_answer.pop('done_tasks_ids')
+            if done_tasks_ids:
+                for id in done_tasks_ids:
+                    await self.task_repo.done_task(id)
+            
+            tasks_answer['project_id'] = project_id
+            tasks_answer['commit_sha'] = commit['sha']
             
             
-            new_task_schema = TaskCreateSchema(**new_task)
+            new_task_schema = TaskCreateSchema(**tasks_answer)
 
             task = await self.task_repo.create(new_task_schema)
-            existing_tasks.append(task.title)
+            existing_tasks.append({"task_id": task.id, "task_title": task.title})
         
         project_commits = list(await self.commit_repo.get_commits_for_project(project_id))
         if len(project_commits) > 5:

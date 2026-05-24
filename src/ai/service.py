@@ -35,7 +35,7 @@ class AiService:
         answer = await self.ask_llm(messages)
         return answer
 
-    async def create_task(self, commit_summary: str, tasks: list[str]):
+    async def create_task(self, commit_summary: str, tasks: list):
         user_prompt = f'Last commit summary: {commit_summary}. Already existing tasks: {tasks}'
         
         messages = [

@@ -24,11 +24,3 @@ async def index():
 @app.exception_handler(ProjectServiceException)  # TODO: project global base exception
 async def project_service_exception(request, exc: ProjectServiceException):
     return JSONResponse(status_code=exc.error_code, content={"detail": exc.message})
-
-
-@app.on_event("startup")
-async def startup():
-    from src.core.database import Base, engine
-
-    async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.create_all)

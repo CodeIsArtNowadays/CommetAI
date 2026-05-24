@@ -2,6 +2,7 @@ from typing import Generic, Sequence, TypeVar
 
 from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload, with_loader_criteria
 
 from src.board.models import Project, Task, Commit
 from src.board.schemas import WebhookDataCreateSchema
@@ -46,7 +47,21 @@ class ProjectRepository(BaseRepository[Project]):
 
     def __init__(self, session: AsyncSession):
         self.session = session
+    
+    async def get_project_with_tasks_and_commits(self, project_id: int):
+        stmt = select(Project).where(Project.id==project_id).options(
+            selectinload(Project.commits),
+            selectinload(Project.tasks)
+        ).options(
+            with_loader_criteria(Task, Task.is_done == False)  # type: ignore  # noqa: E712
+        )
+        res = await self.session.scalar(stmt)
+        return res
         
+    async def get_all_tasks_by_project_id(self, project_id: int):
+        stmt = select(Task).where(Task.project_id == project_id)
+        return await self.session.scalar(stmt)
+    
     async def get_all_project_by_user(self, user_id: int) -> Sequence[Project]:
         stmt = select(Project).where(Project.owner_id==user_id)
         res = await self.session.scalars(stmt)

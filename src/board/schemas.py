@@ -6,23 +6,25 @@ from src.auth.schemas import UserInfoSchema
 
 
 class ProjectBaseSchema(BaseModel):
-    
     title: str
     description: str | None = Field(default=None)
     
+class ProjectRetrieveSchema(ProjectBaseSchema):
+    id: int
+    owner: UserInfoSchema
+    created_at: datetime
+    tasks: list[TaskRetrieveByProjectSchema]
+    commits: list[CommitRetrieveByProjectSchema]
     
 class ProjectUpdateSchema(BaseModel):
     title: str | None = Field(default=None)
     description: str | None = Field(default=None)
     
-    
 class ProjectCreateRequestSchema(ProjectBaseSchema):
     pass
 
-
 class ProjectCreateSchema(ProjectCreateRequestSchema):
     owner_id: int
-    
 
 class WebhookCreateSchema(BaseModel):
     repo_full_name: str
@@ -33,28 +35,20 @@ class WebhookDataCreateSchema(BaseModel):
     webhook_id: int
     webhook_secret: str
 
-class ProjectRetrieveSchema(ProjectBaseSchema):
-    id: int
-    owner: UserInfoSchema
-    created_at: datetime
-
 class ProjectNestedRetrieveSchema(BaseModel):
     id: int
     title: str
-
 
 class TaskBaseSchema(BaseModel):
     title: str
     due_time: datetime | None = Field(default=None)
     description: str | None = Field(default=None)
     is_done: bool = Field(default=False)
-    
-    
+
 class TaskRetrieveSchema(TaskBaseSchema):
     id: int
-    
-    assignee: UserInfoSchema
     project: ProjectNestedRetrieveSchema
+
 
 
 class TaskCreateSchema(TaskBaseSchema):
@@ -80,3 +74,30 @@ class CommitCreateSchema(BaseModel):
     project_id: int
     conventional_commits: bool
     author: str
+    
+    
+    
+    
+    
+    
+class TaskRetrieveByProjectSchema(BaseModel):
+    id: int
+    title: str
+    description: str
+    due_time: str | None = Field(default=None)
+    commit_sha: str
+    
+    
+class CommitRetrieveByProjectSchema(BaseModel):
+    sha: str
+    commit_info: str
+    summary: str
+    technical: str
+    process: str
+    risks: str
+    conventional_commits: bool
+    author: str
+    
+    
+class TasksAllRetreiveSchema(TaskRetrieveByProjectSchema):
+    is_done: bool
