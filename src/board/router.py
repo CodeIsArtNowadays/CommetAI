@@ -2,6 +2,7 @@ import json
 
 from fastapi import Depends, Request, Response, BackgroundTasks
 from fastapi.routing import APIRouter
+from loguru import logger
 from redis.asyncio import Redis
 
 from src.board.process_push import ProcessPushUseCase
@@ -16,8 +17,6 @@ from src.board.dependencies import get_project_service, get_webhook_service
 projects_router = APIRouter()
 webhook_router = APIRouter()
 tasks_router = APIRouter(prefix='/projects/{project_id}')
-
-
 
 
 @projects_router.get('/', response_model=list[ProjectRetrieveSchema])
@@ -85,8 +84,11 @@ async def webhook_callback(
     if event == 'ping':
         return Response(status_code=200)
     
+    logger.info('Webhook arrived')
     
     delivery = request.headers.get('x-github-delivery')
+    
+    logger.info(f'Webhhok | Delivery {delivery}')
     
     delivery_check_error = (not bool(delivery)) or bool(await redis.get(delivery))
     
@@ -98,15 +100,19 @@ async def webhook_callback(
     if event == 'push':
         response_data = json.loads(body)
         repo_full_name = response_data['repository']['full_name']
+        
+        logger.info(f'Webhook | Repo {repo_full_name}')
 
         project = await project_service.repo.get_project_by_repo_full_name(repo_full_name)
         
         signature = request.headers.get('x-hub-signature-256')
         
         if not signature:
+            logger.error('Webhook | No signature')
             raise WebhookNotVerify  
         
         if not await webhook_service.verify_webhook_request(signature, project.webhook_secret, body):
+            logger.error('Webhook | No signature')
             raise WebhookNotVerify  
         
         push_data = {

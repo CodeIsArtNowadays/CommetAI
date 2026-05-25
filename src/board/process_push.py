@@ -1,5 +1,6 @@
 import httpx
 import json
+from loguru import logger
 
 from fastapi import Depends
 
@@ -44,8 +45,6 @@ class ProcessPushUseCase:
                 )
 
                 response = await client.get(url, headers=headers)
-                # if not response.status_code == 201:
-                #     raise Exception  # TODO: exc
 
                 response = response.json()
                 commit_data = response.get("commit")
@@ -75,13 +74,13 @@ class ProcessPushUseCase:
     async def _create_project_description(self, commits: list, project_id: int):
         project = await self.project_service.get_project(project_id)
         answer = await self.ai_service.create_project_description(commits, project.title)
-        print('asdasdasd', answer['description'])
         project = await self.project_service.repo.set_project_description(project, answer['description'])
         
     
     async def __call__(self, data: dict):
-        print('USE CASE START')
+        logger.info('Push')
         commits = data["commits"]
+        logger.info(f'Push | commits: {len(commits)}')
         repo_full_name = data["repo_full_name"]
         owner_github_token = data["owner_github_token"]
         project_id = data['project_id']
@@ -92,6 +91,7 @@ class ProcessPushUseCase:
         existing_tasks = await self._get_undone_tasks_titles_by_project_id(project_id) 
 
         for commit in commits_meta:
+            logger.info(f'Push | Commits | id: {commits["sha"]}')
             ai_data = {'commit_message': commit['commit_message'], 'diffs': commit['diffs']}
             ai_response = json.loads(await self.ai_service.summarize_commit(json.dumps(ai_data)))
             
@@ -123,11 +123,11 @@ class ProcessPushUseCase:
             new_task_schema = TaskCreateSchema(**tasks_answer)
 
             task = await self.task_repo.create(new_task_schema)
+            logger.info(f'Push | Task {task.title}')
             existing_tasks.append({"task_id": task.id, "task_title": task.title})
         
         project_commits = list(await self.commit_repo.get_commits_for_project(project_id))
         if len(project_commits) > 5:
             await self._create_project_description(project_commits, project_id)
-        print('USE CASE END')
         return {'ok': True}
             

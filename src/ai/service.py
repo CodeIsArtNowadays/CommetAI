@@ -1,5 +1,7 @@
 import json
+import time
 
+from loguru import logger
 from openai import AsyncOpenAI
 
 from src.ai.prompts import create_task_system_prompt, summarize_commit_system_prompt, describe_project_system_prompt
@@ -13,12 +15,14 @@ class AiService:
         self.model = 'openai/gpt-oss-20b:free'
         
     async def ask_llm(self, messages):
+        logger.info(f'AI | model {self.model}')
+        start_time = time.perf_counter()
         response = await self.client.chat.completions.create(
-          model="openai/gpt-oss-120b:free",
+          model=self.model,
           messages=messages,
           extra_body={"reasoning": {"enabled": True}}
         )
-
+        logger.info(f'AI | Respond time: {time.perf_counter() - start_time}')
         response = response.choices[0].message
         if not response.content:
             raise LLMException
@@ -42,7 +46,6 @@ class AiService:
             {'role': 'system', 'content': create_task_system_prompt},
             {'role': 'user', 'content': user_prompt}
         ]
-        print(user_prompt)
         
         answer = await self.ask_llm(messages)
         answer = json.loads(answer)
