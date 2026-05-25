@@ -1,33 +1,28 @@
 <script setup>
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue'
 import ProjectCard from '../components/ProjectCard.vue'
 
-const projects = ref([
-  {
-    id: 1,
-    title: 'CommetAI',
-    tasks: [
-      { id: 1, title: 'Setup Vite + Vue 3' },
-      { id: 2, title: 'Build ProjectCard component' },
-      { id: 3, title: 'Add dark mode toggle' },
-    ]
-  },
-  {
-    id: 2,
-    title: 'Backend API',
-    tasks: [
-      { id: 1, title: 'Create /projects endpoint' },
-      { id: 2, title: 'Add authentication' },
-    ]
-  },
-  {
-    id: 3,
-    title: 'Mobile App',
-    tasks: [
-      { id: 1, title: 'Design onboarding screens' },
-    ]
-  },
-])
+const projects = ref([])
+const isLoading = ref(true)
+const error = ref(null)
+
+onMounted(async () => {
+  try {
+    const response = await fetch('/api/projects/', {
+      headers: {
+        'Authorization': `Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoxLCJleHBpcmUiOiIyMDI2LTA2LTAxIDE1OjQ1OjU1LjUzNTMyMCJ9.yBSjh4Gct7CaP0dmiqMM2Ye2OIDDxaUpsLtvIC2AZRo`
+      }
+    })
+
+    if (!response.ok) throw new Error('Failed to fetch projects')
+
+    projects.value = await response.json()
+  } catch (e) {
+    error.value = e.message
+  } finally {
+    isLoading.value = false
+  }
+})
 </script>
 
 <template>
@@ -37,7 +32,25 @@ const projects = ref([
       <p class="text-gray-500 text-sm">{{ projects.length }} projects available</p>
     </div>
 
-    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+    <!-- Loading -->
+    <div v-if="isLoading" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+      <div
+        v-for="n in 3"
+        :key="n"
+        class="h-48 rounded-2xl bg-gray-100 dark:bg-gray-800 animate-pulse"
+      />
+    </div>
+
+    <!-- Error -->
+    <div
+      v-else-if="error"
+      class="text-red-500 text-sm bg-red-50 dark:bg-red-900/20 px-4 py-3 rounded-xl"
+    >
+      {{ error }}
+    </div>
+
+    <!-- Projects -->
+    <div v-else class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
       <ProjectCard
         v-for="project in projects"
         :key="project.id"

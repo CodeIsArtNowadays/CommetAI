@@ -37,7 +37,7 @@ async def get_user(
     decoded = await user_service.decode_jwt_token(token)
     
     if not decoded:
-        raise 
+        raise Exception()
         
     user_id = int(decoded['user_id'])
     

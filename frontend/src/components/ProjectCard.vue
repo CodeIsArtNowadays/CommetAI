@@ -36,7 +36,11 @@ const goToProject = () => {
       <h3 class="text-gray-900 dark:text-white font-semibold text-base group-hover:text-blue-600 dark:group-hover:text-blue-300 transition-colors">
         {{ project.title }}
       </h3>
-      <span class="text-2xl opacity-40 group-hover:opacity-80 transition-opacity">☄️</span>
+      <span class="text-2xl opacity-40 group-hover:opacity-80 transition-opacity"><img
+          src="../assets/logo2.png"
+          alt="CommetAI"
+          class="h-8"
+      /></span>
     </div>
 
     <div>

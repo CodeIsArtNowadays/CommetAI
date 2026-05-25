@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import TaskCard from '../components/TaskCard.vue'
 import CommitCard from '../components/CommitCard.vue'
@@ -7,150 +7,38 @@ import CommitCard from '../components/CommitCard.vue'
 const route = useRoute()
 const router = useRouter()
 
+const project = ref(null)
+const loading = ref(true)
+const error = ref(null)
 const showDone = ref(false)
 
-const projects = ref([
-  {
-    id: 1,
-    title: 'CommetAI',
-    description: 'Git + Comet + AI project management tool built with Vue 3.',
-    tasks: [
-      {
-        id: 1,
-        title: 'Setup Vite + Vue 3',
-        description: 'Initialize the project with Vite, Vue 3, Tailwind CSS v4 and Vue Router. Configure aliases and base layout.',
-        due_time: '2026-05-20T00:00:00',
-        commit_sha: 'a1b2c3d4e5f6',
-        is_done: true
-      },
-      {
-        id: 2,
-        title: 'Build ProjectCard component',
-        description: 'Create a reusable ProjectCard with fixed task slots, hidden task counter, and click navigation.',
-        due_time: '2026-05-22T00:00:00',
-        commit_sha: 'e4f5g6h7i8j9',
-        is_done: true
-      },
-      {
-        id: 3,
-        title: 'Add dark mode toggle',
-        description: 'Implement theme switcher using useTheme composable with localStorage persistence and immediate watcher.',
-        due_time: '2026-05-26T00:00:00',
-        commit_sha: null,
-        is_done: false
-      },
-      {
-        id: 4,
-        title: 'Connect to backend API',
-        description: 'Replace all mock data with real fetch calls to the API running on port 8000. Handle loading and error states.',
-        due_time: '2026-05-30T00:00:00',
-        commit_sha: null,
-        is_done: false
-      },
-      {
-        id: 5,
-        title: 'Add authentication',
-        description: 'Implement JWT-based login flow with protected routes. Store token in localStorage and attach to all API requests.',
-        due_time: '2026-06-05T00:00:00',
-        commit_sha: null,
-        is_done: false
-      },
-    ],
-    commits: [
-      {
-        id: 1,
-        summary: 'init: setup Vite + Vue 3 + Tailwind',
-        technical: 'Initialized Vite project with @vitejs/plugin-vue, installed tailwindcss v4 via @tailwindcss/vite, configured @import in style.css.',
-        risks: 'Tailwind v4 config differs from v3 — no tailwind.config.js needed.',
-        process: 'Followed official Vite + Vue 3 quickstart, then layered Tailwind on top.',
-        conventional: true,
-        author: 'astronaut_dev'
-      },
-      {
-        id: 2,
-        summary: 'feat: add ProjectCard component',
-        technical: 'Built ProjectCard.vue with computed taskSlots (fixed 3 slots) and hiddenCount. Uses useRouter for navigation.',
-        risks: 'None significant.',
-        process: 'Component-first approach, tested with mock data before wiring to page.',
-        conventional: true,
-        author: 'astronaut_dev'
-      },
-      {
-        id: 3,
-        summary: 'feat: dark mode with localStorage',
-        technical: 'Created useTheme.js composable. Applies dark class to document.documentElement. Watches isDark with immediate:true.',
-        risks: 'Must call useTheme() in App.vue or watch never fires on load.',
-        process: 'Debugged missing dark class — root cause was useTheme not called at app level.',
-        conventional: true,
-        author: 'astronaut_dev'
-      },
-      {
-        id: 4,
-        summary: 'fix: router path mismatch /projects vs /project',
-        technical: 'Corrected route definition in main.js from /projects/:id to /project/:id to match router.push calls in ProjectCard.',
-        risks: 'Any hardcoded links to /projects/:id would 404.',
-        process: 'Caught by comparing main.js routes with ProjectCard goToProject function.',
-        conventional: true,
-        author: 'astronaut_dev'
-      },
-    ]
-  },
-  {
-    id: 2,
-    title: 'Backend API',
-    description: 'REST API server on port 8000 for CommetAI.',
-    tasks: [
-      {
-        id: 1,
-        title: 'Create /projects endpoint',
-        description: 'GET /projects should return a paginated list of all projects with task counts.',
-        due_time: '2026-05-28T00:00:00',
-        commit_sha: null,
-        is_done: false
-      },
-      {
-        id: 2,
-        title: 'Add authentication',
-        description: 'POST /auth/login accepts email + password, returns signed JWT. Middleware should protect all non-public routes.',
-        due_time: '2026-06-03T00:00:00',
-        commit_sha: null,
-        is_done: false
-      },
-    ],
-    commits: [
-      {
-        id: 1,
-        summary: 'init: fastapi project scaffold',
-        technical: 'Created FastAPI app with uvicorn, added basic project structure with routers and models folders.',
-        risks: 'No auth yet — all endpoints are public.',
-        process: 'Started from FastAPI official template.',
-        conventional: true,
-        author: 'astronaut_dev'
-      },
-    ]
-  },
-  {
-    id: 3,
-    title: 'Mobile App',
-    description: 'Cross-platform mobile client for CommetAI.',
-    tasks: [
-      {
-        id: 1,
-        title: 'Design onboarding screens',
-        description: 'Create Figma mockups for the full onboarding flow: splash, login, signup, and home.',
-        due_time: '2026-06-10T00:00:00',
-        commit_sha: null,
-        is_done: false
-      },
-    ],
-    commits: []
-  },
-])
+// в <script setup> ProjectDetailPage.vue
+const formatDate = (str) => {
+  if (!str) return '—'
+  return new Date(str).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
+}
 
-const project = computed(() => projects.value.find(p => p.id === Number(route.params.id)))
+onMounted(async () => {
+  try {
+    const token = localStorage.getItem('access_token')
+
+
+    const res = await fetch(`/api/projects/${route.params.id}`, {
+      headers: {
+        'Authorization': `Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoxLCJleHBpcmUiOiIyMDI2LTA2LTAxIDE1OjQ1OjU1LjUzNTMyMCJ9.yBSjh4Gct7CaP0dmiqMM2Ye2OIDDxaUpsLtvIC2AZRo`
+      }
+    })
+    if (!res.ok) throw new Error(`HTTP ${res.status}`)
+    project.value = await res.json()
+  } catch (e) {
+    error.value = e.message
+  } finally {
+    loading.value = false
+  }
+})
 
 const activeTasks = computed(() => project.value?.tasks.filter(t => !t.is_done) ?? [])
-const doneTasks = computed(() => project.value?.tasks.filter(t => t.is_done) ?? [])
+const doneTasks   = computed(() => project.value?.tasks.filter(t => t.is_done)  ?? [])
 
 const goBack = () => router.push('/')
 </script>
@@ -165,17 +53,36 @@ const goBack = () => router.push('/')
       ← Back to projects
     </button>
 
-    <div v-if="!project" class="text-center text-gray-400 dark:text-gray-600 py-20 text-lg">
+    <!-- Loading -->
+    <div v-if="loading" class="flex flex-col gap-3 animate-pulse">
+      <div class="h-8 w-48 bg-gray-200 dark:bg-gray-800 rounded-lg"></div>
+      <div class="h-4 w-72 bg-gray-100 dark:bg-gray-800/60 rounded"></div>
+      <div class="mt-6 flex flex-col gap-2">
+        <div v-for="i in 3" :key="i" class="h-12 bg-gray-100 dark:bg-gray-800/40 rounded-xl"></div>
+      </div>
+    </div>
+
+    <!-- Error -->
+    <div v-else-if="error" class="text-center text-red-400 py-20 text-sm">
+      Failed to load project: {{ error }}
+    </div>
+
+    <!-- Not found -->
+    <div v-else-if="!project" class="text-center text-gray-400 dark:text-gray-600 py-20 text-lg">
       Project not found.
     </div>
 
     <div v-else>
+      <!-- Header -->
       <div class="mb-10">
         <div class="flex items-center gap-3 mb-2">
-          <span class="text-3xl">☄️</span>
+          <img src="../assets/logo2.png" alt="CommetAI" class="h-8" />
           <h1 class="text-gray-900 dark:text-white text-2xl font-bold">{{ project.title }}</h1>
         </div>
-        <p class="text-gray-500 dark:text-gray-400 text-sm">{{ project.description }}</p>
+        <p class="text-gray-500 dark:text-gray-400 text-sm">{{ project.description ?? 'No description.' }}</p>
+        <p class="text-gray-400 dark:text-gray-600 text-xs mt-1 font-mono">
+          by {{ project.owner?.username }} · created {{ formatDate(project.created_at) }}
+        </p>
       </div>
 
       <!-- Tasks -->
@@ -185,16 +92,10 @@ const goBack = () => router.push('/')
           <span class="text-gray-400 text-xs font-mono">{{ project.tasks.length }} total</span>
         </div>
 
-        <!-- Active tasks -->
         <div class="flex flex-col gap-2">
-          <TaskCard
-            v-for="task in activeTasks"
-            :key="task.id"
-            :task="task"
-          />
+          <TaskCard v-for="task in activeTasks" :key="task.id" :task="task" />
         </div>
 
-        <!-- Done tasks toggle -->
         <div v-if="doneTasks.length > 0" class="mt-3">
           <button
             @click="showDone = !showDone"
@@ -206,11 +107,7 @@ const goBack = () => router.push('/')
 
           <Transition name="expand">
             <div v-if="showDone" class="flex flex-col gap-2 mt-2">
-              <TaskCard
-                v-for="task in doneTasks"
-                :key="task.id"
-                :task="task"
-              />
+              <TaskCard v-for="task in doneTasks" :key="task.id" :task="task" />
             </div>
           </Transition>
         </div>
@@ -228,11 +125,7 @@ const goBack = () => router.push('/')
         </div>
 
         <div class="flex flex-col gap-2">
-          <CommitCard
-            v-for="commit in project.commits"
-            :key="commit.id"
-            :commit="commit"
-          />
+          <CommitCard v-for="commit in project.commits" :key="commit.sha" :commit="commit" />
         </div>
       </section>
     </div>
@@ -241,15 +134,10 @@ const goBack = () => router.push('/')
 </template>
 
 <style scoped>
-.expand-enter-active,
-.expand-leave-active {
+.expand-enter-active, .expand-leave-active {
   transition: opacity 0.22s ease, max-height 0.28s cubic-bezier(0.4, 0, 0.2, 1);
   max-height: 1000px;
   overflow: hidden;
 }
-.expand-enter-from,
-.expand-leave-to {
-  opacity: 0;
-  max-height: 0;
-}
+.expand-enter-from, .expand-leave-to { opacity: 0; max-height: 0; }
 </style>
