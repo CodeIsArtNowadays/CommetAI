@@ -1,6 +1,7 @@
 from loguru import logger
 from fastapi import FastAPI
 from fastapi.responses import JSONResponse
+from fastapi.middleware.cors import CORSMiddleware
 
 from src.board import projects_router, webhook_router
 from src.auth import auth_router
@@ -22,7 +23,15 @@ app.middleware("http")(logging_middleware)
 @app.get('/index')
 async def index():
     return {'Me': 'KING'}
-    
+
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:5173"],  # или ["*"] для разработки
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 @app.exception_handler(ProjectServiceException)  # TODO: project global base exception
 async def project_service_exception(request, exc: ProjectServiceException):

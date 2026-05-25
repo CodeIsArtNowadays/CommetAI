@@ -63,7 +63,11 @@ class ProjectRepository(BaseRepository[Project]):
         return await self.session.scalar(stmt)
     
     async def get_all_project_by_user(self, user_id: int) -> Sequence[Project]:
-        stmt = select(Project).where(Project.owner_id==user_id)
+        stmt = select(Project).where(Project.owner_id==user_id).options(
+            selectinload(Project.tasks)
+        ).options(
+            with_loader_criteria(Task, Task.is_done == False)  # type: ignore  # noqa: E712
+        )
         res = await self.session.scalars(stmt)
         return res.all()
         

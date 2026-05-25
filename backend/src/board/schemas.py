@@ -8,7 +8,13 @@ from src.auth.schemas import UserInfoSchema
 class ProjectBaseSchema(BaseModel):
     title: str
     description: str | None = Field(default=None)
-    
+
+class ProjectListSchema(ProjectBaseSchema):
+    id: int
+    owner: UserInfoSchema
+    created_at: datetime
+    tasks: list[TaskInfoSchema]
+
 class ProjectRetrieveSchema(ProjectBaseSchema):
     id: int
     owner: UserInfoSchema
@@ -49,7 +55,8 @@ class TaskRetrieveSchema(TaskBaseSchema):
     id: int
     project: ProjectNestedRetrieveSchema
 
-
+class TaskInfoSchema(BaseModel):
+    title: str
 
 class TaskCreateSchema(TaskBaseSchema):
     project_id: int

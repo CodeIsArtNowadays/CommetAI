@@ -91,7 +91,7 @@ class ProcessPushUseCase:
         existing_tasks = await self._get_undone_tasks_titles_by_project_id(project_id) 
 
         for commit in commits_meta:
-            logger.info(f'Push | Commits | id: {commits["sha"]}')
+            logger.info(f'Push | Commits | id: {commit["sha"]}')
             ai_data = {'commit_message': commit['commit_message'], 'diffs': commit['diffs']}
             ai_response = json.loads(await self.ai_service.summarize_commit(json.dumps(ai_data)))
             

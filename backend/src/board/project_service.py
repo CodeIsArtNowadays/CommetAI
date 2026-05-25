@@ -28,9 +28,13 @@ class ProjectService:
         project = await self.repo.create(project_complete_schema)
         repo_full_name = project.owner.username + "/" + project.title
 
-        wh_data_raw = await self.webhook_service.create_webhook(
-            repo_full_name, user.github_token
-        )
+        try:
+            wh_data_raw = await self.webhook_service.create_webhook(
+                repo_full_name, user.github_token
+            )
+        except Exception:
+            await self.repo.session.rollback()  # убираем мусорную запись
+            raise
 
         wh_data = WebhookDataCreateSchema(
             webhook_id=wh_data_raw["wh_id"],

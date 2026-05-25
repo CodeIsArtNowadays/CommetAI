@@ -6,9 +6,9 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 class Settings(BaseSettings):
     DB_HOST: str = ''
     DB_PORT: int = 0
-    DB_NAME: str = ''
-    DB_USER: str = ''
-    DB_PASS: str = ''
+    POSTGRES_DB: str = ''
+    POSTGRES_USER: str = ''
+    POSTGRES_PASSWORD: str = ''
     
     JWT_SECRET_KEY: str = ''
     
@@ -26,7 +26,7 @@ class Settings(BaseSettings):
     
     @property
     def async_db_url(self) -> str:
-        return f'postgresql+asyncpg://{self.DB_USER}:{self.DB_PASS}@{self.DB_HOST}:{self.DB_PORT}/{self.DB_NAME}'
+        return f'postgresql+asyncpg://{self.POSTGRES_USER}:{self.POSTGRES_PASSWORD}@{self.DB_HOST}:{self.DB_PORT}/{self.POSTGRES_DB}'
     
 
 @lru_cache

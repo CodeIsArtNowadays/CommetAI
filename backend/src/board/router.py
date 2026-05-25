@@ -7,7 +7,7 @@ from redis.asyncio import Redis
 
 from src.board.process_push import ProcessPushUseCase
 from src.core.exceptions import WebhookNotVerify
-from src.board.schemas import ProjectRetrieveSchema, ProjectCreateRequestSchema, ProjectUpdateSchema, TasksAllRetreiveSchema
+from src.board.schemas import ProjectRetrieveSchema, ProjectCreateRequestSchema, ProjectUpdateSchema, TasksAllRetreiveSchema, ProjectListSchema
 from src.board.project_service import ProjectService, WebhookService
 from src.auth.models import User
 from src.core.dependencies import get_redis_cli, get_user
@@ -19,7 +19,7 @@ webhook_router = APIRouter()
 tasks_router = APIRouter(prefix='/projects/{project_id}')
 
 
-@projects_router.get('/', response_model=list[ProjectRetrieveSchema])
+@projects_router.get('/', response_model=list[ProjectListSchema])
 async def get_all_projects(
     user: User = Depends(get_user),
     service: ProjectService = Depends(get_project_service),
@@ -90,12 +90,9 @@ async def webhook_callback(
     
     logger.info(f'Webhhok | Delivery {delivery}')
     
-    delivery_check_error = (not bool(delivery)) or bool(await redis.get(delivery))
-    
-    if delivery_check_error:
-        raise WebhookNotVerify
-    else:
-        await redis.set(delivery, True, ex=604800)  # type: ignore
+    if not delivery or not await redis.set(delivery, 1, ex=604800, nx=True):
+        return Response(status_code=200)
+
 
     if event == 'push':
         response_data = json.loads(body)
