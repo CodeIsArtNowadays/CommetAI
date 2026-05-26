@@ -16,6 +16,7 @@ Backend-приложение для автоматической планиро�
 - redis
 - docker
 <br>
+
 ## Запуск локально 
 
 `git clone https://github.com/CodeIsArtNowadays/CommetAI.git`
