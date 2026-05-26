@@ -28,7 +28,6 @@ git clone https://github.com/CodeIsArtNowadays/CommetAI.git
 ```bash
 docker-compose up --build
 ```
-
 <br>
 
 ## Архитектура
@@ -39,7 +38,45 @@ docker-compose up --build
 Основная логика обработки push событий вынесена в use case. 
 
 Логика обработки запросов к AI вынесена в отдельное приложение и может быть переиспользована, за исключением промптов (prompts.py)
+<br>
 
+## Структура проекта 
+
+```
+backend/
+|-- config.py
+|-- main.py
+|-- pyproject.toml
+`-- src
+    |-- ai
+    |   |-- dependencies.py
+    |   |-- prompts.py
+    |   |-- routes.py
+    |   `-- service.py
+    |-- auth
+    |   |-- dependencies.py
+    |   |-- exceptions.py
+    |   |-- models.py
+    |   |-- repository.py
+    |   |-- router.py
+    |   |-- schemas.py
+    |   `-- service.py
+    |-- board
+    |   |-- dependencies.py
+    |   |-- models.py
+    |   |-- process_push.py
+    |   |-- project_service.py
+    |   |-- repository.py
+    |   |-- router.py
+    |   |-- schemas.py
+    |   `-- webhook_service.py
+    `-- core
+        |-- database.py
+        |-- dependencies.py
+        |-- exceptions.py
+        |-- middleware.py
+        `-- mock.py
+```
 <br>
 
 ## План на дальнейшее развитие
