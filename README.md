@@ -19,11 +19,15 @@ Backend-приложение для автоматической планиро�
 
 ## Запуск локально 
 
-`git clone https://github.com/CodeIsArtNowadays/CommetAI.git`
+```bash
+git clone https://github.com/CodeIsArtNowadays/CommetAI.git
+```
 
 создать .env файл, по типу .env.example
 
-`docker-compose up --build`
+```bash
+docker-compose up --build
+```
 
 <br>
 
