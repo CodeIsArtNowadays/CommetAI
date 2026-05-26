@@ -6,11 +6,12 @@ from src.auth.models import User
 from src.auth.service import UserService
 from src.auth.dependencies import get_user_service
 from src.core.dependencies import get_user
+from src.auth.schemas import UserInfoSchema
 
 auth_router = APIRouter()
 
     
-@auth_router.get('/profile')
+@auth_router.get('/profile', response_model=UserInfoSchema)
 async def profile(user: User = Depends(get_user)):
     return user
     

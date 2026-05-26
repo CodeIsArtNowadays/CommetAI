@@ -1,18 +1,19 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { useAuth } from '../composables/useAuth.js'
 import TaskCard from '../components/TaskCard.vue'
 import CommitCard from '../components/CommitCard.vue'
 
 const route = useRoute()
 const router = useRouter()
+const { authHeaders } = useAuth()
 
 const project = ref(null)
 const loading = ref(true)
 const error = ref(null)
 const showDone = ref(false)
 
-// в <script setup> ProjectDetailPage.vue
 const formatDate = (str) => {
   if (!str) return '—'
   return new Date(str).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
@@ -20,13 +21,8 @@ const formatDate = (str) => {
 
 onMounted(async () => {
   try {
-    const token = localStorage.getItem('access_token')
-
-
     const res = await fetch(`/api/projects/${route.params.id}`, {
-      headers: {
-        'Authorization': `Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoxLCJleHBpcmUiOiIyMDI2LTA2LTAxIDE1OjQ1OjU1LjUzNTMyMCJ9.yBSjh4Gct7CaP0dmiqMM2Ye2OIDDxaUpsLtvIC2AZRo`
-      }
+      headers: authHeaders.value
     })
     if (!res.ok) throw new Error(`HTTP ${res.status}`)
     project.value = await res.json()
@@ -42,6 +38,7 @@ const doneTasks   = computed(() => project.value?.tasks.filter(t => t.is_done)  
 
 const goBack = () => router.push('/')
 </script>
+
 
 <template>
   <main class="max-w-4xl mx-auto px-6 py-10">

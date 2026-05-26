@@ -1,6 +1,9 @@
 <script setup>
 import { ref, onMounted } from 'vue'
+import { useAuth } from '../composables/useAuth.js'
 import ProjectCard from '../components/ProjectCard.vue'
+
+const { authHeaders } = useAuth()
 
 const projects = ref([])
 const isLoading = ref(true)
@@ -8,15 +11,11 @@ const error = ref(null)
 
 onMounted(async () => {
   try {
-    const response = await fetch('/api/projects/', {
-      headers: {
-        'Authorization': `Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoxLCJleHBpcmUiOiIyMDI2LTA2LTAxIDE1OjQ1OjU1LjUzNTMyMCJ9.yBSjh4Gct7CaP0dmiqMM2Ye2OIDDxaUpsLtvIC2AZRo`
-      }
+    const res = await fetch('/api/projects/', {
+      headers: authHeaders.value
     })
-
-    if (!response.ok) throw new Error('Failed to fetch projects')
-
-    projects.value = await response.json()
+    if (!res.ok) throw new Error('Failed to fetch projects')
+    projects.value = await res.json()
   } catch (e) {
     error.value = e.message
   } finally {
@@ -24,6 +23,7 @@ onMounted(async () => {
   }
 })
 </script>
+
 
 <template>
   <main class="max-w-6xl mx-auto px-6 py-10">
