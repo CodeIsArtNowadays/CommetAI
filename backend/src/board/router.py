@@ -2,7 +2,9 @@ import json
 
 from fastapi import Depends, Request, Response, BackgroundTasks
 from fastapi.routing import APIRouter
+
 from loguru import logger
+
 from redis.asyncio import Redis
 
 from src.board.process_push import ProcessPushUseCase
@@ -84,11 +86,7 @@ async def webhook_callback(
     if event == 'ping':
         return Response(status_code=200)
     
-    logger.info('Webhook arrived')
-    
     delivery = request.headers.get('x-github-delivery')
-    
-    logger.info(f'Webhhok | Delivery {delivery}')
     
     if not delivery or not await redis.set(delivery, 1, ex=604800, nx=True):
         return Response(status_code=200)
@@ -97,8 +95,6 @@ async def webhook_callback(
     if event == 'push':
         response_data = json.loads(body)
         repo_full_name = response_data['repository']['full_name']
-        
-        logger.info(f'Webhook | Repo {repo_full_name}')
 
         project = await project_service.repo.get_project_by_repo_full_name(repo_full_name)
         

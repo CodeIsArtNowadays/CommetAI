@@ -7,7 +7,7 @@ from src.ai.service import AiService
 
 async def get_openai_client():
     client = AsyncOpenAI(
-        base_url="https://openrouter.ai/api/v1",
+        base_url="https://openai.api.proxyapi.ru/v1",
         api_key=settings.OPENAI_TOKEN
     )
     yield client

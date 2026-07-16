@@ -20,6 +20,7 @@ class Settings(BaseSettings):
     REDIS_HOST: str = ''
     REDIS_PORT: int = 0
     
+    # webhook_url: str = 'http://139.100.235.44:8000/webhook/event'
     webhook_url: str = 'https://peddling-unsure-unpaid.ngrok-free.dev/webhook/event'
     
     model_config = SettingsConfigDict(env_file='.env')

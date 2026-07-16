@@ -61,11 +61,11 @@ class WebhookService:
                 project_webhook_secret.encode(), body, hashlib.sha256
             ).hexdigest()
         )
-        logger.info(f'Webhook | Verify | {expected} | {signature}')
-        logger.info(f'Secret from DB: [{project_webhook_secret}]')
-        logger.info(f'Body length: {len(body)}')
-        logger.info(f'Expected: {expected}')
-        logger.info(f'Got: {signature}')
+        # logger.info(f'Webhook | Verify | {expected} | {signature}')
+        # logger.info(f'Secret from DB: [{project_webhook_secret}]')
+        # logger.info(f'Body length: {len(body)}')
+        # logger.info(f'Expected: {expected}')
+        # logger.info(f'Got: {signature}')
 
 
         if not hmac.compare_digest(expected, signature):

@@ -12,15 +12,14 @@ class AiService:
     def __init__(self, client: AsyncOpenAI):
         
         self.client = client
-        self.model = 'openai/gpt-oss-20b:free'
+        self.model = 'openai/gpt-4.1-nano'
         
     async def ask_llm(self, messages):
         logger.info(f'AI | model {self.model}')
         start_time = time.perf_counter()
         response = await self.client.chat.completions.create(
-          model=self.model,
-          messages=messages,
-          extra_body={"reasoning": {"enabled": True}}
+            model=self.model,
+            messages=messages
         )
         logger.info(f'AI | Respond time: {time.perf_counter() - start_time}')
         response = response.choices[0].message

@@ -18,7 +18,7 @@ app.include_router(webhook_router)
 
 app.include_router(ai_router)
 
-app.middleware("http")(logging_middleware)
+# app.middleware("http")(logging_middleware)
 
 @app.get('/index')
 async def index():
@@ -27,7 +27,7 @@ async def index():
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173"],  # или ["*"] для разработки
+    allow_origins=["http://localhost:5173"],  # или ["*"] для разработки 135.106.137.167
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
