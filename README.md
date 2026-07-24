@@ -16,17 +16,7 @@ Backend-приложение для автоматической планиро�
 - redis
 - docker
 
-## Запуск локально 
-
-```bash
-git clone https://github.com/CodeIsArtNowadays/CommetAI.git
-```
-
-создать .env файл, по типу .env.example
-
-```bash
-docker-compose up --build
-```
+## Запуск локально не предусмотрен в связи с интеграцией Github app
 
 ## Архитектура
 
