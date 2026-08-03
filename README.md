@@ -1,72 +1,61 @@
-# Автоматическая система управления проектами
-<br>
-Backend-приложение для автоматической планировки разработки проектов, через подключенный github репозиторий.
+# CommetAI
 
-Каждый push, полученный от подключенного проекта, обрабатывается AI сервисом для суммаризации комитов и создания задач.
+AI-powered project management system with GitHub integration.
 
-## Демо
-// VIDEO 
+Connect your repository, and every push automatically transforms into a clear picture of progress: the system verifies and deduplicates webhook events, retrieves change diffs, summarizes commits using an LLM, generates tasks, and closes completed ones.
 
-## Стек используемых технологий:
+**Live demo:** http://139.100.235.44:5173/  <!-- замените на домен с HTTPS -->
 
-- python
-- FastAPI w/ sqlalchemy, pydantic
-- OpenAI
-- github API
-- postgresql
-- redis
-- docker
+## How does this work
 
-## Запуск локально не предусмотрен в связи с интеграцией Github app
+1. The user connects the repository via the GitHub App (OAuth).
+2. GitHub sends a webhook for each push.
+3. The backend verifies the event signature (HMAC SHA-256) and discards duplicates (deduplication by delivery ID via Redis).
+4. For each commit, diffs are requested via the GitHub API.
+5. The AI ​​service (OpenAI API, structured output) summarizes the changes.
+6. Based on the summarization, new tasks are created and completed ones are closed.
 
-## Архитектура
+## Tech stack
 
-Проект разбит на логические приложения, используется роут-сервис-репозиторий подход для разделения обработки запросов - бизнес логики - работы с бд.
-Каждому приложению соотвествуют свои модели, роуты (при необходимости), схемы и сервис.
+Python · FastAPI · SQLAlchemy (async) · Pydantic · PostgreSQL · Redis ·
+OpenAI API GitHub API (App + OAuth + webhooks) Docker
 
-Основная логика обработки push событий вынесена в use case. 
+## Key features
 
-Логика обработки запросов к AI вынесена в отдельное приложение и может быть переиспользована, за исключением промптов (prompts.py)
+- **Webhooks Verification** - HMAC signature verification for each event,
+  invalid requests are rejected before processing.
+- **Deduplication** - GitHub can re-deliver an event; the delivery ID
+  is stored in Redis, preventing duplicates from entering the pipeline.
+- **Route → Service → Repository** - separation of request processing,
+  business logic, and database operations. Each application (auth, board, ai) contains
+  its own models, schemas, routes, and service.
+- **Reusable AI Module** - LLM request logic is isolated
+  in a separate application; only prompts (`prompts.py`) are specific.
+- **Push processing is moved to a use case** (`process_push.py`) - orchestration
+  of the entire pipeline in one place.
 
-## Структура проекта 
+## Project structure
 
 ```
 backend/
 |-- config.py
 |-- main.py
 `-- src
-    |-- ai
-    |   |-- dependencies.py
-    |   |-- prompts.py
-    |   |-- routes.py
-    |   `-- service.py
-    |-- auth
-    |   |-- dependencies.py
-    |   |-- exceptions.py
-    |   |-- models.py
-    |   |-- repository.py
-    |   |-- router.py
-    |   |-- schemas.py
-    |   `-- service.py
-    |-- board
-    |   |-- dependencies.py
-    |   |-- models.py
-    |   |-- process_push.py
-    |   |-- project_service.py
-    |   |-- repository.py
-    |   |-- router.py
-    |   |-- schemas.py
-    |   `-- webhook_service.py
-    `-- core
-        |-- database.py
-        |-- dependencies.py
-        |-- exceptions.py
-        |-- middleware.py
-        `-- mock.py
+    |-- ai          # LLM service: summarization, task generation
+    |-- auth        # # JWT authentication, OAuth GitHub
+    |-- board       # projects, tasks, webhooks processing
+    `-- core        # database, middleware, exceptions
 ```
 
-## План на дальнейшее развитие
+## Local Launch
 
-- Деплой ✅
-- Добавления функционала групп
-- Усиление обработки не success pipeline
+The project uses a GitHub App (webhooks + OAuth), which requires a public
+callback URL, so local launch is not supported.
+
+The quickest way to see the project live is at: **[live demo](http://139.100.235.44:5173/)**.
+
+## Планы развития
+
+- [x] Deploy
+- [ ] Group functionality
+- [ ] Handling non-success pipeline events
