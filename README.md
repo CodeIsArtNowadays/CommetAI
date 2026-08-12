@@ -1,148 +1,61 @@
-# Автоматическая система управления проектами
-<br>
-Backend-приложение для автоматической планировки разработки проектов, через подключенный github репозиторий.
+# CommetAI
 
-Каждый push, полученный от подключенного проекта, обрабатывается AI сервисом для суммаризации комитов и создания задач.
+AI-powered project management system with GitHub integration.
 
-// VIDEO 
+Connect your repository, and every push automatically transforms into a clear picture of progress: the system verifies and deduplicates webhook events, retrieves change diffs, summarizes commits using an LLM, generates tasks, and closes completed ones.
 
-## Стек используемых технологий:
+**Live demo:** http://139.100.235.44:5173/  <!-- замените на домен с HTTPS -->
 
-- python
-- FastAPI w/ sqlalchemy, pydantic
-- OpenAI
-- github API
-- postgresql
-- redis
-- docker
+## How does this work
 
-## Запуск локально 
+1. The user connects the repository via the GitHub App (OAuth).
+2. GitHub sends a webhook for each push.
+3. The backend verifies the event signature (HMAC SHA-256) and discards duplicates (deduplication by delivery ID via Redis).
+4. For each commit, diffs are requested via the GitHub API.
+5. The AI ​​service (OpenAI API, structured output) summarizes the changes.
+6. Based on the summarization, new tasks are created and completed ones are closed.
 
-```bash
-git clone https://github.com/CodeIsArtNowadays/CommetAI.git
-```
+## Tech stack
 
-создать .env файл, по типу .env.example
+Python · FastAPI · SQLAlchemy (async) · Pydantic · PostgreSQL · Redis ·
+OpenAI API GitHub API (App + OAuth + webhooks) Docker
 
-```bash
-docker-compose up --build
-```
+## Key features
 
-## Архитектура
+- **Webhooks Verification** - HMAC signature verification for each event,
+  invalid requests are rejected before processing.
+- **Deduplication** - GitHub can re-deliver an event; the delivery ID
+  is stored in Redis, preventing duplicates from entering the pipeline.
+- **Route → Service → Repository** - separation of request processing,
+  business logic, and database operations. Each application (auth, board, ai) contains
+  its own models, schemas, routes, and service.
+- **Reusable AI Module** - LLM request logic is isolated
+  in a separate application; only prompts (`prompts.py`) are specific.
+- **Push processing is moved to a use case** (`process_push.py`) - orchestration
+  of the entire pipeline in one place.
 
-Проект разбит на логические приложения, используется роут-сервис-репозиторий подход для разделения обработки запросов - бизнес логики - работы с бд.
-Каждому приложению соотвествуют свои модели, роуты (при необходимости), схемы и сервис.
-
-Основная логика обработки push событий вынесена в use case. 
-
-Логика обработки запросов к AI вынесена в отдельное приложение и может быть переиспользована, за исключением промптов (prompts.py)
-
-## Структура проекта 
+## Project structure
 
 ```
 backend/
 |-- config.py
 |-- main.py
 `-- src
-    |-- ai
-    |   |-- dependencies.py
-    |   |-- prompts.py
-    |   |-- routes.py
-    |   `-- service.py
-    |-- auth
-    |   |-- dependencies.py
-    |   |-- exceptions.py
-    |   |-- models.py
-    |   |-- repository.py
-    |   |-- router.py
-    |   |-- schemas.py
-    |   `-- service.py
-    |-- board
-    |   |-- dependencies.py
-    |   |-- models.py
-    |   |-- process_push.py
-    |   |-- project_service.py
-    |   |-- repository.py
-    |   |-- router.py
-    |   |-- schemas.py
-    |   `-- webhook_service.py
-    `-- core
-        |-- database.py
-        |-- dependencies.py
-        |-- exceptions.py
-        |-- middleware.py
-        `-- mock.py
+    |-- ai          # LLM service: summarization, task generation
+    |-- auth        # # JWT authentication, OAuth GitHub
+    |-- board       # projects, tasks, webhooks processing
+    `-- core        # database, middleware, exceptions
 ```
 
-## Структура проекта 
-backend/
-|-- config.py
-|-- data.txt
-|-- docs
-|   |-- 6
-|   |   |-- bitcoin.pdf
-|   |   |-- ny_criminal.pdf
-|   |   `-- Selenium_python.pdf
-|   `-- 7
-|       |-- bitcoin.pdf
-|       |-- Eht.pdf
-|       `-- ny_criminal.pdf
-|-- main.py
-|-- README.md
-`-- src
-    |-- auth
-    |   |-- dependencies.py
-    |   |-- exceptions.py
-    |   |-- models.py
-    |   |-- registration.py
-    |   |-- repository.py
-    |   |-- router.py
-    |   |-- schemas.py
-    |   `-- service.py
-    |-- chat
-    |   |-- dependencies.py
-    |   |-- models.py
-    |   |-- repository.py
-    |   |-- router.py
-    |   |-- schemas.py
-    |   |-- service.py
-    |   |-- test
-    |   |   |-- bm25.py
-    |   |   |-- index.html
-    |   |   `-- script.js
-    |   `-- utils.py
-    |-- core
-    |   |-- custom_types.py
-    |   |-- db.py
-    |   |-- dependencies.py
-    |   |-- exceptions.py
-    |   `-- generic_repository.py
-    |-- docs
-    |   |-- dependencies.py
-    |   |-- models.py
-    |   |-- process_file.py
-    |   |-- repository.py
-    |   |-- router.py
-    |   |-- schemas.py
-    |   `-- service.py
-    |-- rag
-    |   |-- calculations.py
-    |   |-- data.py
-    |   |-- dependencies.py
-    |   |-- llm_service.py
-    |   |-- rag_service.py
-    |   `-- retriever.py
-    `-- workspaces
-        |-- dependencies.py
-        |-- exceptions.py
-        |-- models.py
-        |-- repository.py
-        |-- router.py
-        |-- schemas.py
-        `-- service.py
+## Local Launch
 
-## План на дальнейшее развитие
+The project uses a GitHub App (webhooks + OAuth), which requires a public
+callback URL, so local launch is not supported.
 
-- Деплой
-- Добавления функционала групп
-- Усиление обработки не success pipeline
+The quickest way to see the project live is at: **[live demo](http://139.100.235.44:5173/)**.
+
+## Планы развития
+
+- [x] Deploy
+- [ ] Group functionality
+- [ ] Handling non-success pipeline events
