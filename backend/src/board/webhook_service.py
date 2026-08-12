@@ -42,8 +42,11 @@ class WebhookService:
                 },
             )
 
-            if not response.status_code == 201:
+            if response.status_code != 201:
+                logger.error(f"GitHub webhook creation failed [{response.status_code}]: {response.text}")
+                logger.warning(response.text)
                 raise GithubApiException(status_code=response.status_code)
+
 
             response_data = response.json()
 

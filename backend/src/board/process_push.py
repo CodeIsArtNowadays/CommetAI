@@ -11,6 +11,7 @@ from src.board.project_service import ProjectService
 from src.board.repository import CommitRepository, TaskRepository
 from src.board.schemas import CommitCreateSchema, TaskCreateSchema
 
+from src.core.database import local_session
 
 
 class ProcessPushUseCase:
@@ -91,6 +92,7 @@ class ProcessPushUseCase:
         existing_tasks = await self._get_undone_tasks_titles_by_project_id(project_id) 
 
         for commit in commits_meta:
+            
             logger.info(f'Push | Commits | id: {commit["sha"]}')
             ai_data = {'commit_message': commit['commit_message'], 'diffs': commit['diffs']}
             ai_response = json.loads(await self.ai_service.summarize_commit(json.dumps(ai_data)))
@@ -106,11 +108,11 @@ class ProcessPushUseCase:
                 conventional_commits=ai_response["conventional_commits"],
                 author=commit["commit_author_name"],
             )
-            
+            logger.info('Push create')
             await self.commit_repo.create(commit_create_data)
-            
+                
             tasks_answer = await self.ai_service.create_task(commit_create_data.summary, existing_tasks)
-            
+            logger.info(f'Tasks {tasks_answer}')
             done_tasks_ids = tasks_answer.pop('done_tasks_ids')
             if done_tasks_ids:
                 for id in done_tasks_ids:
